@@ -925,6 +925,124 @@ html, body, #root, .app-root {
   letter-spacing: 0.05em;
 }
 
+/* Structure Inspector: header actions + "Step inside" button */
+.structure-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.step-inside {
+  background: rgba(252, 211, 77, 0.12);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  cursor: pointer;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 11px;
+  border-radius: 3px;
+  letter-spacing: 0.05em;
+  transition: background 0.12s;
+}
+.step-inside:hover {
+  background: rgba(252, 211, 77, 0.22);
+}
+
+/* Interior overlay — modal "step inside" view of a structure */
+.interior-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 250;
+}
+.interior-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--hud-border);
+  color: var(--panel-fg);
+  width: min(720px, calc(100vw - 40px));
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 6px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+}
+.interior-card header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--hud-border);
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.interior-card header h2 {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.interior-mood {
+  font-size: 10px;
+  color: var(--panel-muted);
+  font-style: italic;
+  margin-top: 2px;
+}
+.interior-card header button {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--panel-fg);
+  cursor: pointer;
+  padding: 2px 8px;
+  font: inherit;
+}
+.interior-card header button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.interior-canvas-wrap {
+  padding: 14px;
+  display: flex;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+}
+.interior-canvas {
+  /* The canvas itself is sized to interior dimensions in pixels; scale it up
+     so small interiors don't look microscopic and large ones don't blow out. */
+  image-rendering: pixelated;
+  border: 2px solid var(--hud-border);
+  max-width: 100%;
+  height: auto;
+}
+.interior-roster {
+  padding: 10px 16px 16px;
+  border-top: 1px solid var(--hud-border);
+  background: rgba(0, 0, 0, 0.18);
+  max-height: 200px;
+  overflow-y: auto;
+}
+.interior-roster h3 {
+  margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.interior-roster ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.interior-roster li {
+  padding: 3px 0;
+  font-size: 11px;
+}
+.roster-name { color: var(--panel-fg); font-weight: bold; }
+.roster-role { color: var(--panel-muted); margin-left: 4px; }
+.roster-where { color: var(--accent); margin-left: 4px; font-style: italic; }
+
 /* Past Kingdoms (archive) overlay */
 .past-kingdoms-overlay {
   position: fixed;

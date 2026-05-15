@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Structure } from "../sim/types";
 import type { World } from "../sim/World";
+import { InteriorView } from "./InteriorView";
 
 /**
  * Floating card that shows what's happening at a clicked structure: who lives
@@ -18,6 +19,7 @@ export function StructureInspector({
 }) {
   // Light re-render on world stats tick so live numbers update.
   const [, setNow] = useState(0);
+  const [interiorOpen, setInteriorOpen] = useState(false);
   useEffect(() => {
     const id = window.setInterval(() => setNow((n) => n + 1), 1000);
     return () => clearInterval(id);
@@ -41,7 +43,17 @@ export function StructureInspector({
             <h2>{structure.name}</h2>
             <div className="structure-kind">{structure.kind}</div>
           </div>
-          <button onClick={onClose} title="Close">×</button>
+          <div className="structure-actions">
+            <button
+              type="button"
+              className="step-inside"
+              onClick={() => setInteriorOpen(true)}
+              title="Step inside"
+            >
+              Step inside ›
+            </button>
+            <button onClick={onClose} title="Close" aria-label="Close inspector">×</button>
+          </div>
         </header>
 
         <section>
@@ -134,6 +146,13 @@ export function StructureInspector({
           </section>
         )}
       </div>
+      {interiorOpen && (
+        <InteriorView
+          structure={structure}
+          world={world}
+          onClose={() => setInteriorOpen(false)}
+        />
+      )}
     </div>
   );
 }
