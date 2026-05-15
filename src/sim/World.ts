@@ -847,9 +847,10 @@ export class World {
             this.journal.write(
               `${user} arrived from afar and was welcomed into ${home.name}.`,
               "life",
+              home.id,
             );
             // A self-contained backstory line, deterministic per (name, seed).
-            this.journal.write(backstoryFor(user, npcSeed), "event");
+            this.journal.write(backstoryFor(user, npcSeed), "event", home.id);
           }
         }
         break;

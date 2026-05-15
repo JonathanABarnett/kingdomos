@@ -182,6 +182,34 @@ describe("Stress — long-running sim", () => {
     expect(writes.length).toBeLessThan(50);
   });
 
+  it("NPCs stationary for >1 tick have prevPos === pos (no bouncing)", () => {
+    // Regression guard: an earlier version of tickNPCs only updated prevPos
+    // inside the walking branch, so idle/working NPCs accumulated a stale
+    // prevPos from their last walk frame. The renderer interpolated
+    // 0→1 between those two static points every sim tick, producing visible
+    // "bouncing" at 10 Hz.
+    //
+    // The invariant: an NPC that has been non-walking for at least 2
+    // consecutive ticks must have prevPos === pos. (The transitional tick
+    // where walking ends is allowed to have prevPos != pos so the renderer
+    // can land the final interpolation smoothly.)
+    const w = new World({ seed: 42 });
+    const prevActivity = new Map<string, string>(w.npcs.map((n) => [n.id, n.activity]));
+    for (let i = 0; i < 200; i++) {
+      w.tick(0.1);
+      for (const npc of w.npcs) {
+        const wasNonWalking = prevActivity.get(npc.id) !== "walking";
+        const isNonWalking = npc.activity !== "walking";
+        if (wasNonWalking && isNonWalking) {
+          // Stable stationary for 2+ ticks — prevPos must match pos
+          expect(npc.pos.x).toBeCloseTo(npc.prevPos.x, 6);
+          expect(npc.pos.y).toBeCloseTo(npc.prevPos.y, 6);
+        }
+        prevActivity.set(npc.id, npc.activity);
+      }
+    }
+  });
+
   it("journal growth scales linearly with in-world days, not with tick count", () => {
     // The same invariant from the other angle: when days DO advance, the
     // journal grows, but at a sane rate. Two runs over the same number of

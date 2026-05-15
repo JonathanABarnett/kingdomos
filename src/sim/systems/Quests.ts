@@ -52,9 +52,11 @@ const ARCS: ArcDef[] = [
       {
         onDay: 0,
         write: ({ journal, flavor, world, rand }) => {
+          const town = pickTown(world, rand);
           journal.write(
-            `${capitalize(flavor)} arrived at the gates of ${pick(world, rand)} bearing news from distant lands.`,
+            `${capitalize(flavor)} arrived at the gates of ${town.name} bearing news from distant lands.`,
             "event",
+            town.id,
           );
         },
       },
@@ -92,35 +94,41 @@ const ARCS: ArcDef[] = [
       {
         onDay: 0,
         write: ({ journal, flavor, world, rand }) => {
+          const town = pickTown(world, rand);
           journal.write(
-            `Preparations began for a festival; ${flavor} took charge in ${pick(world, rand)}.`,
+            `Preparations began for a festival; ${flavor} took charge in ${town.name}.`,
             "milestone",
+            town.id,
           );
         },
       },
       {
         onDay: 1,
-        write: ({ journal }) => {
+        write: ({ journal, world }) => {
+          const forge = world.map.structures.find((s) => s.kind === "forge");
           journal.write(
             `Banners were hung. The blacksmiths hammered late, finishing commemorative tokens.`,
             "event",
+            forge?.id,
           );
         },
       },
       {
         onDay: 2,
         write: ({ journal, world }) => {
+          const castle = world.map.structures.find((s) => s.kind === "castle");
           world.bus.publish(
             makeEvent("festival", {
               source: "narrative",
               intensity: 0.8,
               duration_ms: 45_000,
-              payload: { structure: "highkeep", label: "the festival begins" },
+              payload: { structure: castle?.id ?? "highkeep", label: "the festival begins" },
             }),
           );
           journal.write(
             `The festival arrived! Music carried from the keep, and lanterns swayed above every street.`,
             "milestone",
+            castle?.id,
           );
         },
       },
@@ -132,35 +140,41 @@ const ARCS: ArcDef[] = [
     phases: [
       {
         onDay: 0,
-        write: ({ journal }) => {
+        write: ({ journal, world }) => {
+          const castle = world.map.structures.find((s) => s.kind === "castle");
           journal.write(
             "A scout returned at dusk: a strange banner had been raised on the eastern hills.",
             "weather",
+            castle?.id,
           );
         },
       },
       {
         onDay: 2,
-        write: ({ journal }) => {
+        write: ({ journal, world }) => {
+          const castle = world.map.structures.find((s) => s.kind === "castle");
           journal.write(
             "Three more days of silence from the east. The guards doubled their watch.",
             "weather",
+            castle?.id,
           );
         },
       },
       {
         onDay: 4,
         write: ({ journal, world }) => {
+          const castle = world.map.structures.find((s) => s.kind === "castle");
           world.bus.publish(
             makeEvent("celebration", {
               source: "narrative",
               intensity: 0.7,
-              payload: { structure: "highkeep", label: "the banner fell" },
+              payload: { structure: castle?.id ?? "highkeep", label: "the banner fell" },
             }),
           );
           journal.write(
             "Word came at dawn — the banner had been struck down, by what hand no one could say. The kingdom breathed easier.",
             "milestone",
+            castle?.id,
           );
           // A pennant from the fallen rival makes it home.
           world.treasury.acquire("relic", "from the eastern banner");
@@ -175,9 +189,11 @@ const ARCS: ArcDef[] = [
       {
         onDay: 0,
         write: ({ journal, world, rand }) => {
+          const town = pickTown(world, rand);
           journal.write(
-            `A grey cat with one chipped ear appeared at the gates of ${pick(world, rand)} and refused to leave.`,
+            `A grey cat with one chipped ear appeared at the gates of ${town.name} and refused to leave.`,
             "life",
+            town.id,
           );
         },
       },
@@ -193,9 +209,11 @@ const ARCS: ArcDef[] = [
       {
         onDay: 3,
         write: ({ journal, world }) => {
+          const castle = world.map.structures.find((s) => s.kind === "castle");
           journal.write(
             "By the third day the cat had a name (no one would say who chose it) and a place on the keep's south windowsill. The kingdom had quietly grown by one.",
             "milestone",
+            castle?.id,
           );
           // A small token for the chronicle.
           world.treasury.acquire("treasure", "the cat's first whisker, kept in a tin");
@@ -251,9 +269,11 @@ const ARCS: ArcDef[] = [
       {
         onDay: 0,
         write: ({ journal, world, rand }) => {
+          const town = pickTown(world, rand);
           journal.write(
-            `A small commotion in ${pick(world, rand)} — a child had wandered into the wood and not come back by dark.`,
+            `A small commotion in ${town.name} — a child had wandered into the wood and not come back by dark.`,
             "event",
+            town.id,
           );
         },
       },
@@ -286,28 +306,34 @@ const ARCS: ArcDef[] = [
     phases: [
       {
         onDay: 0,
-        write: ({ journal, flavor }) => {
+        write: ({ journal, flavor, world }) => {
+          const castle = world.map.structures.find((s) => s.kind === "castle");
           journal.write(
             `${capitalize(flavor)}, who had ridden out years ago and not been heard from, was seen at the southern gate.`,
             "event",
+            castle?.id,
           );
         },
       },
       {
         onDay: 1,
-        write: ({ journal, flavor }) => {
+        write: ({ journal, flavor, world }) => {
+          const castle = world.map.structures.find((s) => s.kind === "castle");
           journal.write(
             `${capitalize(flavor)} took supper at the keep and spoke of foreign coastlines. The court listened past midnight.`,
             "event",
+            castle?.id,
           );
         },
       },
       {
         onDay: 2,
         write: ({ journal, flavor, world }) => {
+          const castle = world.map.structures.find((s) => s.kind === "castle");
           journal.write(
             `${capitalize(flavor)} left at dawn with a fresh cloak and a promise to send a letter — which they probably won't.`,
             "milestone",
+            castle?.id,
           );
           world.treasury.acquire("relic", `a sailor's compass left by ${flavor}`);
         },
@@ -321,26 +347,30 @@ const ARCS: ArcDef[] = [
       {
         onDay: 0,
         write: ({ journal, world, rand }) => {
+          const town = pickTown(world, rand);
           journal.write(
-            `The main well in ${pick(world, rand)} ran dry overnight. The town drew water from the river all morning.`,
+            `The main well in ${town.name} ran dry overnight. The town drew water from the river all morning.`,
             "weather",
+            town.id,
           );
         },
       },
       {
         onDay: 2,
         write: ({ journal, world }) => {
+          const mine = world.map.structures.find((s) => s.kind === "mine");
           // A miner-style event as the well-diggers go to work.
           world.bus.publish(
             makeEvent("mining", {
               source: "narrative",
               intensity: 0.3,
-              payload: { structure: "deeprock", label: "well-deepening" },
+              payload: { structure: mine?.id ?? "deeprock", label: "well-deepening" },
             }),
           );
           journal.write(
             "Well-diggers worked the old shaft deeper. By evening it was producing again — colder, sweeter water than before.",
             "milestone",
+            mine?.id,
           );
         },
       },
@@ -352,35 +382,41 @@ const ARCS: ArcDef[] = [
     phases: [
       {
         onDay: 0,
-        write: ({ journal, flavor }) => {
+        write: ({ journal, flavor, world }) => {
+          const lib = world.map.structures.find((s) => s.kind === "library");
           journal.write(
             `${capitalize(flavor)} uncovered an old map in the Scriptorium's lower vault. The scholars were quietly excited.`,
             "event",
+            lib?.id,
           );
         },
       },
       {
         onDay: 1,
-        write: ({ journal }) => {
+        write: ({ journal, world }) => {
+          const lib = world.map.structures.find((s) => s.kind === "library");
           journal.write(
             "Translation work continued through the night. The candles burned low.",
             "event",
+            lib?.id,
           );
         },
       },
       {
         onDay: 3,
         write: ({ journal, world }) => {
+          const lib = world.map.structures.find((s) => s.kind === "library");
           world.bus.publish(
             makeEvent("research", {
               source: "narrative",
               intensity: 0.6,
-              payload: { structure: "scriptorium", label: "the map's secret" },
+              payload: { structure: lib?.id ?? "scriptorium", label: "the map's secret" },
             }),
           );
           journal.write(
             "The map's secret was laid bare: a freshwater spring, undiscovered, three days' ride to the north. A small mercy in a quiet age.",
             "milestone",
+            lib?.id,
           );
           // Reward — the translated scroll itself becomes a vault piece.
           world.treasury.acquire("scroll", "the translated vault map");
@@ -540,9 +576,14 @@ export class Quests {
                   w.journal.write(
                     `${capitalize(flavor)} was welcomed into ${home.name} and given a small house.`,
                     "life",
+                    home.id,
                   );
                   // One-line backstory so the new villager reads as a person.
-                  w.journal.write(backstoryFor(capitalize(flavor), npcSeed), "event");
+                  w.journal.write(
+                    backstoryFor(capitalize(flavor), npcSeed),
+                    "event",
+                    home.id,
+                  );
                 }
               }
             },
@@ -886,10 +927,22 @@ export class Quests {
 }
 
 function pick(world: World, rand: () => number = Math.random): string {
+  return pickTown(world, rand).name;
+}
+
+/**
+ * Pick a random town and return both its display name and id. Callers that
+ * need to pin journal entries to a structure use the id; callers that just
+ * need the name for prose use `pick()` above.
+ */
+function pickTown(
+  world: World,
+  rand: () => number = Math.random,
+): { name: string; id: string | undefined } {
   const towns = world.map.structures.filter((s) => s.kind === "town");
-  if (!towns.length) return "the keep";
+  if (!towns.length) return { name: "the keep", id: undefined };
   const t = towns[Math.floor(rand() * towns.length)];
-  return t.name;
+  return { name: t.name, id: t.id };
 }
 
 function capitalize(s: string): string {

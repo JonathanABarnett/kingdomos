@@ -102,7 +102,10 @@ export class CourtSpeech {
       "{name}",
       npc.name ?? "the unnamed court member",
     );
-    this.journal.write(line, "event");
+    // Court members speak from / are framed against the castle. Pin the
+    // entry there so clicking "go to" snaps the camera to the throne room.
+    const castle = this.world.map.structures.find((s) => s.kind === "castle");
+    this.journal.write(line, "event", castle?.id);
     this.lastFiredDay[role] = day;
   }
 }
