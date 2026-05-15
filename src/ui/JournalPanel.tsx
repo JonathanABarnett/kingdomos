@@ -40,8 +40,21 @@ const KIND_LABEL: Record<JournalKind, string> = {
  * This is the artifact a user screenshots and shares. Days are grouped,
  * entries are tagged by kind, the latest day stays anchored at the top, and
  * the player can filter / search / export the whole chronicle as markdown.
+ *
+ * `onNavigateToStructure`: if provided, entries with a `targetStructureId`
+ * render a pin button that calls this callback. App.tsx wires it to the
+ * camera's snapTo so the player can jump from "Berta and Olen were wed at
+ * Highkeep" to actually looking at Highkeep.
  */
-export function JournalPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function JournalPanel({
+  open,
+  onClose,
+  onNavigateToStructure,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onNavigateToStructure?: (structureId: string) => void;
+}) {
   const journal = useGameStore((s) => s.journal);
   const clearJournal = useGameStore((s) => s.clearJournal);
   const settings = useGameStore((s) => s.settings);
@@ -137,8 +150,19 @@ export function JournalPanel({ open, onClose }: { open: boolean; onClose: () => 
               <ul>
                 {group.entries.map((e) => (
                   <li key={e.id} className={`entry kind-${e.kind}`}>
-                    <span className="entry-icon">{kindIcon[e.kind]}</span>
+                    <span className="entry-icon" aria-hidden="true">{kindIcon[e.kind]}</span>
                     <span className="entry-text">{e.text}</span>
+                    {e.targetStructureId && onNavigateToStructure && (
+                      <button
+                        type="button"
+                        className="entry-pin"
+                        title={`Go to where this took place`}
+                        aria-label={`Go to ${e.targetStructureId}`}
+                        onClick={() => onNavigateToStructure(e.targetStructureId!)}
+                      >
+                        📍
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>

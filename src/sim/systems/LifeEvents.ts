@@ -80,7 +80,8 @@ export class LifeEvents {
     const b = candidates[Math.floor(this.rand() * candidates.length)];
     a.partnerId = b.id;
     b.partnerId = a.id;
-    this.journal.write(this.marriageLine(a, b), "life");
+    // The wedding happens at the shared home — anchor the journal entry there.
+    this.journal.write(this.marriageLine(a, b), "life", a.homeId);
   }
 
   private marriageLine(a: NPC, b: NPC): string {
@@ -133,7 +134,7 @@ export class LifeEvents {
       parentIds: [a.id, b.id],
     });
     if (added) {
-      this.journal.write(this.birthLine(name, a, b), "life");
+      this.journal.write(this.birthLine(name, a, b), "life", a.homeId);
     }
   }
 
@@ -157,7 +158,7 @@ export class LifeEvents {
       const partner = this.world.npcs.find((n) => n.id === npc.partnerId);
       if (partner) partner.partnerId = undefined;
     }
-    this.journal.write(this.deathLine(npc), "life");
+    this.journal.write(this.deathLine(npc), "life", npc.homeId);
   }
 
   private deathLine(npc: NPC): string {

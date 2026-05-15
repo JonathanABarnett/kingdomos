@@ -25,8 +25,25 @@ export class Journal {
     this.world.bus.subscribe((ev) => this.handleEvent(ev));
   }
 
-  /** Write a free-form entry (used by life-events, achievements, etc). */
-  write(text: string, kind: SavedJournalEntry["kind"] = "event") {
+  /**
+   * Write a free-form entry. Optionally tags the entry with a
+   * `targetStructureId` so the UI can offer "go here" navigation when the
+   * player clicks the entry.
+   *
+   * The 3rd arg accepts either:
+   *   - a bare structure id string (shorthand for `{ targetStructureId }`)
+   *   - an options object with `{ targetStructureId }` (room to add more
+   *     fields without another overload — e.g. `npcId` someday)
+   */
+  write(
+    text: string,
+    kind: SavedJournalEntry["kind"] = "event",
+    target?: string | { targetStructureId?: string },
+  ) {
+    const targetStructureId =
+      typeof target === "string"
+        ? target
+        : target?.targetStructureId;
     this.onEntry({
       id: `j_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       day: this.world.state.day,
@@ -34,6 +51,7 @@ export class Journal {
       season: this.world.state.season,
       text,
       kind,
+      targetStructureId,
     });
   }
 
@@ -54,6 +72,9 @@ export class Journal {
     // Skip internally-generated chatter (the bus carries these too).
     if (ev.source === "internal" && ev.kind === "custom") return;
 
+    // The `target` we pick for each entry is the structure id players are
+    // most likely to want to look at — the destination for couriers, the
+    // forge/library/mine for crafting/research events, etc.
     switch (ev.kind) {
       case "courier": {
         const label = ev.payload.label ?? "a sealed scroll";
@@ -61,7 +82,11 @@ export class Journal {
         const to = ev.payload.to ?? "the keep";
         const k = `courier:${from}:${to}`;
         if ((this.dayCoalesce.get(k) ?? 0) === 0) {
-          this.write(pickTemplate(COURIER_TEMPLATES, { from: nice(from), to: nice(to), label }));
+          this.write(
+            pickTemplate(COURIER_TEMPLATES, { from: nice(from), to: nice(to), label }),
+            "event",
+            to,
+          );
         }
         this.dayCoalesce.set(k, (this.dayCoalesce.get(k) ?? 0) + 1);
         break;
@@ -70,16 +95,18 @@ export class Journal {
         const k = "forge";
         const n = (this.dayCoalesce.get(k) ?? 0) + 1;
         this.dayCoalesce.set(k, n);
-        if (n === 1) this.write(pickTemplate(FORGE_FIRST_TEMPLATES, {}));
-        else if (n === 3) this.write(pickTemplate(FORGE_THIRD_TEMPLATES, {}));
+        const forgeId = ev.payload.structure ?? "ironhearth";
+        if (n === 1) this.write(pickTemplate(FORGE_FIRST_TEMPLATES, {}), "event", forgeId);
+        else if (n === 3) this.write(pickTemplate(FORGE_THIRD_TEMPLATES, {}), "event", forgeId);
         break;
       }
       case "research": {
         const k = "research";
         const n = (this.dayCoalesce.get(k) ?? 0) + 1;
         this.dayCoalesce.set(k, n);
-        if (n === 1) this.write(pickTemplate(RESEARCH_FIRST_TEMPLATES, {}));
-        else if (n === 4) this.write(pickTemplate(RESEARCH_FOURTH_TEMPLATES, {}));
+        const libId = ev.payload.structure ?? "scriptorium";
+        if (n === 1) this.write(pickTemplate(RESEARCH_FIRST_TEMPLATES, {}), "event", libId);
+        else if (n === 4) this.write(pickTemplate(RESEARCH_FOURTH_TEMPLATES, {}), "event", libId);
         break;
       }
       case "mining": {
@@ -87,6 +114,8 @@ export class Journal {
         if ((this.dayCoalesce.get(k) ?? 0) === 0) {
           this.write(
             pickTemplate(MINING_TEMPLATES, { label: ev.payload.label ?? "extra shift" }),
+            "event",
+            ev.payload.structure ?? "deeprock",
           );
         }
         this.dayCoalesce.set(k, (this.dayCoalesce.get(k) ?? 0) + 1);
@@ -103,6 +132,7 @@ export class Journal {
               label: ev.payload.label,
             }),
             "milestone",
+            ev.payload.structure ?? "highkeep",
           );
         }
         break;
@@ -112,6 +142,7 @@ export class Journal {
             structure: nice(ev.payload.structure ?? "town"),
           }),
           "milestone",
+          ev.payload.structure,
         );
         break;
       case "airship":

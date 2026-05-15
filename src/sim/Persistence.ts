@@ -104,6 +104,13 @@ export interface SavedJournalEntry {
   season: string;
   text: string;
   kind: "life" | "weather" | "event" | "milestone" | "system";
+  /**
+   * Optional structure this entry refers to ("highkeep", "rivermouth", "ironhearth", …).
+   * When present, the JournalPanel renders a pin button that snaps the
+   * camera to that structure's center. Old saves predate this field — UI
+   * gracefully omits the pin button when undefined.
+   */
+  targetStructureId?: string;
 }
 
 export interface SavedNpc {
@@ -325,6 +332,10 @@ export function validateSave(rawInput: unknown): SaveData | null {
         season: safeString(item.season, 16) || "spring",
         text: safeString(item.text, 240),
         kind: kind as SavedJournalEntry["kind"],
+        targetStructureId:
+          item.targetStructureId === undefined
+            ? undefined
+            : safeString(item.targetStructureId, 64) || undefined,
       });
     }
   }

@@ -423,11 +423,12 @@ export class World {
     const ordinal = ordinalSuffix(year - 1); // year 2 = 1st anniversary
     const flavor =
       ANNIVERSARY_LINES[(year - 2) % ANNIVERSARY_LINES.length] ?? ANNIVERSARY_LINES[0];
+    const castle = this.map.structures.find((s) => s.kind === "castle");
     this.journal.write(
       `The ${ordinal} anniversary of the kingdom — ${flavor}`,
       "milestone",
+      castle?.id,
     );
-    const castle = this.map.structures.find((s) => s.kind === "castle");
     if (castle) {
       this.bus.publish(
         makeEvent("festival", {

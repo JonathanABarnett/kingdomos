@@ -481,7 +481,9 @@ html, body, #root, .app-root {
 }
 .journal-day .entry {
   display: grid;
-  grid-template-columns: 18px 1fr;
+  /* 3 columns: kind icon | text | optional pin button. `auto` collapses when
+     the pin button isn't rendered so non-target entries still align cleanly. */
+  grid-template-columns: 18px 1fr auto;
   gap: 8px;
   padding: 4px 6px;
   border-radius: 3px;
@@ -489,6 +491,24 @@ html, body, #root, .app-root {
   line-height: 1.45;
 }
 .entry-icon { color: var(--accent); text-align: center; }
+.entry-pin {
+  background: transparent;
+  border: none;
+  color: var(--panel-muted);
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 12px;
+  line-height: 1;
+  opacity: 0.5;
+  align-self: center;
+  transition: opacity 0.15s, color 0.15s;
+}
+.entry-pin:hover,
+.entry-pin:focus-visible {
+  opacity: 1;
+  color: var(--accent);
+  outline: none;
+}
 .entry.kind-life { background: rgba(244, 114, 182, 0.05); }
 .entry.kind-life .entry-icon { color: #fb7185; }
 .entry.kind-weather { background: rgba(148, 163, 184, 0.05); }

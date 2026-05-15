@@ -156,6 +156,6 @@ export class Holidays {
         }),
       );
     }
-    this.journal.write(`${h.name} — ${h.journal(this.world)}`, "milestone");
+    this.journal.write(`${h.name} — ${h.journal(this.world)}`, "milestone", target?.id);
   }
 }

@@ -77,7 +77,7 @@ export class Threats {
         payload: { structure: target.id, label: flavor.kind },
       }),
     );
-    this.journal.write(flavor.opening, "weather");
+    this.journal.write(flavor.opening, "weather", target.id);
 
     // Decision
     const expiresAt = Date.now() +

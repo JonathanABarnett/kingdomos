@@ -739,6 +739,20 @@ export function App() {
       <JournalPanel
         open={journalOpen && !streamerMode}
         onClose={() => setJournalOpen(false)}
+        onNavigateToStructure={(structureId) => {
+          // Resolve the structure on the live map and snap the camera to its
+          // center. Falls back to a noop if the structure was renamed/removed
+          // (e.g. an old save referencing something that no longer exists).
+          const w = worldRef.current;
+          const cam = pixiRef.current?.camera;
+          if (!w || !cam) return;
+          const s = w.map.structures.find((x) => x.id === structureId);
+          if (!s) return;
+          cam.snapTo(
+            s.pos.x + s.size.x / 2,
+            s.pos.y + s.size.y / 2,
+          );
+        }}
       />
       {inspected && worldRef.current && !streamerMode && (
         <StructureInspector
@@ -896,18 +910,25 @@ export function App() {
                 w.spawnMonarch(pending.monarchName);
                 // Founding chronicle — three lines that anchor the journal so
                 // the very first thing the player scrolls to feels like the
-                // start of a story rather than a flat log line.
+                // start of a story rather than a flat log line. All three
+                // entries pin to the castle so clicking the pin in the
+                // journal snaps the camera there.
+                const castle = w.map.structures.find((s) => s.kind === "castle");
+                const castleId = castle?.id;
                 w.journal.write(
                   `The kingdom of ${id.kingdomName} was founded under the rule of ${id.monarchName}.`,
                   "milestone",
+                  castleId,
                 );
                 w.journal.write(
                   `On this day the banner was raised over the keep, and the first villagers gathered to swear allegiance.`,
                   "system",
+                  castleId,
                 );
                 w.journal.write(
                   `${pending.petName} the ${pending.petKind} sat at the foot of the throne and refused to leave.`,
                   "life",
+                  castleId,
                 );
                 // silent: true — the founding chronicle just wrote a richer
                 // line ("Mochi sat at the foot of the throne and refused to

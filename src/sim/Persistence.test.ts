@@ -233,6 +233,54 @@ describe("Persistence.validateSave", () => {
     expect(v.npcs[0].parentIds?.length).toBeLessThanOrEqual(2);
   });
 
+  it("preserves targetStructureId on journal entries", () => {
+    const v = validateSave({
+      ...GOOD,
+      journal: [
+        {
+          id: "j_with_target",
+          day: 5,
+          year: 1,
+          season: "spring",
+          text: "A wedding at Highkeep.",
+          kind: "life",
+          targetStructureId: "highkeep",
+        },
+        {
+          id: "j_without_target",
+          day: 5,
+          year: 1,
+          season: "spring",
+          text: "Day 5 dawns; spring continues.",
+          kind: "system",
+        },
+      ],
+    })!;
+    expect(v.journal?.length).toBe(2);
+    expect(v.journal?.[0].targetStructureId).toBe("highkeep");
+    expect(v.journal?.[1].targetStructureId).toBeUndefined();
+  });
+
+  it("sanitizes a malformed targetStructureId on a journal entry", () => {
+    const v = validateSave({
+      ...GOOD,
+      journal: [
+        {
+          id: "j_bad",
+          day: 1,
+          year: 1,
+          season: "spring",
+          text: "test",
+          kind: "event",
+          targetStructureId: "high" + String.fromCharCode(0x00) + "keep" + "Z".repeat(200),
+        },
+      ],
+    })!;
+    const t = v.journal?.[0].targetStructureId ?? "";
+    expect(t.length).toBeLessThanOrEqual(64);
+    expect(t).not.toContain(String.fromCharCode(0x00));
+  });
+
   it("drops non-string parentIds entries silently", () => {
     const v = validateSave({
       ...GOOD,
