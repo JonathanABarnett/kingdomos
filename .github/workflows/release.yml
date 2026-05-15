@@ -14,7 +14,7 @@ jobs:
     #   ITCH_USER        — your itch.io username (or "jonat" by default)
     #   ITCH_GAME        — the project slug (e.g. "kingdomos")
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Node
         uses: actions/setup-node@v4
