@@ -32,7 +32,15 @@ export type StructureKind =
   | "mine"
   | "watchtower"
   | "mill"
-  | "shrine";
+  | "shrine"
+  // Spontaneous discoveries placed by the NarrativeDirector. Lower-stakes
+  // than player-commissioned construction — no cost, no decision; the
+  // chronicle just notes "an old shrine was found in the eastern woods."
+  | "standing_stones"
+  | "ruin"
+  | "camp"
+  | "wellspring"
+  | "obelisk";
 
 export interface Structure {
   id: string;

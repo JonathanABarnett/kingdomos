@@ -72,6 +72,12 @@ export class SpriteFactory {
     this.structures.set("watchtower", (await this.loadStructure("watchtower")) ?? this.buildWatchtower());
     this.structures.set("mill", (await this.loadStructure("mill")) ?? this.buildMill());
     this.structures.set("shrine", (await this.loadStructure("shrine")) ?? this.buildShrine());
+    // Spontaneous landmarks discovered by the NarrativeDirector
+    this.structures.set("standing_stones", (await this.loadStructure("standing_stones")) ?? this.buildStandingStones());
+    this.structures.set("ruin", (await this.loadStructure("ruin")) ?? this.buildRuin());
+    this.structures.set("camp", (await this.loadStructure("camp")) ?? this.buildCamp());
+    this.structures.set("wellspring", (await this.loadStructure("wellspring")) ?? this.buildWellspring());
+    this.structures.set("obelisk", (await this.loadStructure("obelisk")) ?? this.buildObelisk());
 
     const roles = ["villager", "courier", "scholar", "blacksmith", "miner", "guard"];
     for (const r of roles) {
@@ -1013,6 +1019,136 @@ export class SpriteFactory {
     // floor altar with flame
     g.rect(W / 2 - 2, H - 10, 4, 4).fill(shade);
     g.rect(W / 2 - 1, H - 12, 2, 2).fill("#f97316");
+    return this.rt(g, W, H);
+  }
+
+  // ── Landmark sprites — placed at runtime by the NarrativeDirector ────
+
+  private buildStandingStones(): Texture {
+    const W = 32 * 2, H = 32 * 2;
+    const g = new Graphics();
+    g.rect(0, 0, W, H).fill({ alpha: 0 });
+    const stone = "#9ca3af";
+    const stoneShade = "#4b5563";
+    const grass = "#3a4d2d";
+    // Grass patch beneath the stones
+    g.ellipse(W / 2, H - 6, W / 2 - 4, 6).fill(grass);
+    // Five upright stones forming a small ring
+    const slots: Array<[number, number, number, number]> = [
+      [10, H - 22, 5, 16],
+      [22, H - 26, 5, 20],
+      [W / 2 - 2, H - 28, 6, 22],
+      [W - 27, H - 24, 5, 18],
+      [W - 14, H - 22, 5, 16],
+    ];
+    for (const [x, y, w, h] of slots) {
+      g.rect(x, y, w, h).fill(stone);
+      g.rect(x, y, w, 1).fill(stoneShade);
+      g.rect(x, y, 1, h).fill("#c0c8d0");
+      g.rect(x + w - 1, y, 1, h).fill(stoneShade);
+    }
+    return this.rt(g, W, H);
+  }
+
+  private buildRuin(): Texture {
+    const W = 32 * 2, H = 32 * 2;
+    const g = new Graphics();
+    g.rect(0, 0, W, H).fill({ alpha: 0 });
+    const stone = "#78716c";
+    const shade = "#44403c";
+    const moss = "#3a4d2d";
+    // Crumbling base wall — only some sections survive
+    g.rect(6, H - 16, 12, 12).fill(stone);
+    g.rect(6, H - 16, 12, 1).fill(shade);
+    g.rect(22, H - 12, 8, 8).fill(stone);
+    g.rect(W - 18, H - 18, 10, 14).fill(stone);
+    g.rect(W - 18, H - 18, 10, 1).fill(shade);
+    // Partial doorway arch
+    g.rect(W / 2 - 4, H - 22, 2, 12).fill(stone);
+    g.rect(W / 2 + 2, H - 22, 2, 12).fill(stone);
+    g.rect(W / 2 - 4, H - 22, 8, 2).fill(stone);
+    // Moss/grass spreading over the rubble
+    g.rect(7, H - 5, 4, 2).fill(moss);
+    g.rect(W - 16, H - 5, 4, 2).fill(moss);
+    g.rect(W / 2 - 3, H - 5, 4, 2).fill(moss);
+    return this.rt(g, W, H);
+  }
+
+  private buildCamp(): Texture {
+    const W = 32 * 2, H = 32 * 2;
+    const g = new Graphics();
+    g.rect(0, 0, W, H).fill({ alpha: 0 });
+    const tent = "#854d0e";
+    const tentLight = "#a16207";
+    const tentShade = "#451a03";
+    const fire = "#f97316";
+    const fireBright = "#fde047";
+    const log = "#3f2616";
+    // Two small triangle tents
+    for (let y = 0; y < 12; y++) {
+      g.rect(8 + y, H - 18 + y, 14 - y * 2, 1).fill(y < 4 ? tentLight : tent);
+    }
+    g.rect(7, H - 7, 1, 1).fill(tentShade);
+    g.rect(21, H - 7, 1, 1).fill(tentShade);
+    for (let y = 0; y < 10; y++) {
+      g.rect(W - 22 + y, H - 16 + y, 12 - y * 2, 1).fill(y < 3 ? tentLight : tent);
+    }
+    // Campfire between tents
+    g.rect(W / 2 - 4, H - 8, 8, 2).fill(log);
+    g.rect(W / 2 - 2, H - 10, 4, 3).fill(fire);
+    g.rect(W / 2 - 1, H - 11, 2, 2).fill(fireBright);
+    return this.rt(g, W, H);
+  }
+
+  private buildWellspring(): Texture {
+    const W = 32 * 2, H = 32 * 2;
+    const g = new Graphics();
+    g.rect(0, 0, W, H).fill({ alpha: 0 });
+    const stone = "#9ca3af";
+    const stoneShade = "#4b5563";
+    const water = "#3b82f6";
+    const waterLight = "#93c5fd";
+    const wood = "#854d0e";
+    // Round stone well base
+    g.ellipse(W / 2, H - 8, 12, 6).fill(stone);
+    g.ellipse(W / 2, H - 8, 12, 6).stroke({ width: 2, color: stoneShade });
+    // Water at top of well
+    g.ellipse(W / 2, H - 10, 9, 4).fill(water);
+    g.rect(W / 2 - 4, H - 11, 8, 1).fill(waterLight);
+    // Wooden frame + bucket rope
+    g.rect(W / 2 - 12, H - 26, 2, 18).fill(wood);
+    g.rect(W / 2 + 10, H - 26, 2, 18).fill(wood);
+    g.rect(W / 2 - 12, H - 28, 24, 2).fill(wood);
+    g.rect(W / 2 - 1, H - 26, 2, 8).fill("#1c1917"); // rope
+    g.rect(W / 2 - 2, H - 18, 4, 3).fill(wood); // bucket
+    return this.rt(g, W, H);
+  }
+
+  private buildObelisk(): Texture {
+    const W = 32 * 2, H = 32 * 2;
+    const g = new Graphics();
+    g.rect(0, 0, W, H).fill({ alpha: 0 });
+    const stone = "#52525b";
+    const stoneLight = "#71717a";
+    const stoneShade = "#27272a";
+    const accent = "#fde047";
+    // Stepped base
+    g.rect(W / 2 - 10, H - 6, 20, 6).fill(stone);
+    g.rect(W / 2 - 10, H - 6, 20, 1).fill(stoneLight);
+    g.rect(W / 2 - 7, H - 10, 14, 4).fill(stone);
+    g.rect(W / 2 - 7, H - 10, 14, 1).fill(stoneLight);
+    // Tall obelisk shaft, tapering
+    for (let y = 0; y < 24; y++) {
+      const w = Math.max(4, 10 - Math.floor(y / 3));
+      g.rect(W / 2 - w / 2, H - 10 - y, w, 1).fill(stone);
+      g.rect(W / 2 - w / 2, H - 10 - y, 1, 1).fill(stoneLight);
+      g.rect(W / 2 + w / 2 - 1, H - 10 - y, 1, 1).fill(stoneShade);
+    }
+    // Glyph mark near the middle
+    g.rect(W / 2 - 1, H - 22, 2, 4).fill(accent);
+    // Pyramidion at top
+    g.rect(W / 2 - 2, H - 36, 4, 2).fill(stoneLight);
+    g.rect(W / 2 - 1, H - 38, 2, 2).fill(accent);
     return this.rt(g, W, H);
   }
 

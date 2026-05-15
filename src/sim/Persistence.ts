@@ -1,5 +1,5 @@
 import type { World } from "./World";
-import type { NPC, WorldState } from "./types";
+import type { NPC, Structure, WorldState } from "./types";
 import { sanitizeName } from "../lib/sanitize";
 
 /**
@@ -77,6 +77,19 @@ export interface SaveData {
     population: number;
     gold: number;
     vault: number;
+  }>;
+  /**
+   * Spontaneous map landmarks discovered by the NarrativeDirector's
+   * emergence branch (standing_stones, ruin, camp, wellspring, obelisk).
+   * Separate from `construction.completed` because those are player-built
+   * additions; landmarks are world-driven.
+   */
+  landmarks?: Array<{
+    id: string;
+    kind: string;
+    name: string;
+    pos: { x: number; y: number };
+    size: { x: number; y: number };
   }>;
 }
 
@@ -190,6 +203,7 @@ export function serialize(
       completed: world.aspirations.completed,
     },
     history: world.history.snapshots,
+    landmarks: world.discoveries.snapshot(),
   };
 }
 
@@ -388,7 +402,44 @@ export function validateSave(rawInput: unknown): SaveData | null {
     construction: validateConstruction(raw.construction),
     aspirations: validateAspirations(raw.aspirations),
     history: validateHistory(raw.history),
+    landmarks: validateLandmarks(raw.landmarks),
   };
+}
+
+const VALID_LANDMARK_KINDS = new Set([
+  "standing_stones",
+  "ruin",
+  "camp",
+  "wellspring",
+  "obelisk",
+]);
+
+function validateLandmarks(raw: unknown): SaveData["landmarks"] {
+  if (!Array.isArray(raw)) return undefined;
+  const out: NonNullable<SaveData["landmarks"]> = [];
+  for (const item of raw.slice(0, 50)) {
+    if (!isPlainObject(item)) continue;
+    const k = String(item.kind);
+    if (!VALID_LANDMARK_KINDS.has(k)) continue;
+    out.push({
+      id: safeString(item.id, 80) || `landmark_${out.length}`,
+      kind: k,
+      name: safeString(item.name, 64) || k,
+      pos: isPlainObject(item.pos)
+        ? {
+            x: safeNumber((item.pos as Record<string, unknown>).x, 0),
+            y: safeNumber((item.pos as Record<string, unknown>).y, 0),
+          }
+        : { x: 0, y: 0 },
+      size: isPlainObject(item.size)
+        ? {
+            x: safeNumber((item.size as Record<string, unknown>).x, 2),
+            y: safeNumber((item.size as Record<string, unknown>).y, 2),
+          }
+        : { x: 2, y: 2 },
+    });
+  }
+  return out;
 }
 
 const HISTORY_MAX = 90;
@@ -601,6 +652,32 @@ export function applySave(world: World, save: SaveData): void {
   // Restore the per-day history sparkline buffer.
   if (save.history) {
     world.history.hydrate(save.history);
+  }
+  // Re-place narrative-discovered landmarks. The map itself regenerates
+  // from seed each load so the procgen structures come back automatically,
+  // but landmarks are runtime additions and need to be restored.
+  if (save.landmarks) {
+    for (const l of save.landmarks) {
+      if (world.map.structures.some((s) => s.id === l.id)) continue;
+      world.map.structures.push({
+        id: l.id,
+        kind: l.kind as Structure["kind"],
+        name: l.name,
+        pos: { ...l.pos },
+        size: { ...l.size },
+      });
+      world.map.landmarks.set(l.id, {
+        x: l.pos.x + Math.floor(l.size.x / 2),
+        y: l.pos.y + Math.floor(l.size.y / 2),
+      });
+      // Make the footprint walkable
+      for (let dy = 0; dy < l.size.y; dy++) {
+        for (let dx = 0; dx < l.size.x; dx++) {
+          const t = world.map.tiles[(l.pos.y + dy) * world.map.width + (l.pos.x + dx)];
+          if (t) t.walkable = true;
+        }
+      }
+    }
   }
   writeWelcomeBack(world, save);
 }

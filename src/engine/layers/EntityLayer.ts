@@ -4,6 +4,19 @@ import type { SpriteFactory } from "../SpriteFactory";
 import { hoverState } from "../HoverState";
 
 /**
+ * Hash a 32-bit integer to a stable float in [0, 1). Pure / deterministic.
+ * Used to derive per-NPC sub-tile offsets so multiple NPCs on the same
+ * tile spread out visually instead of stacking pixel-perfect.
+ */
+function hash01(n: number): number {
+  let x = (n | 0) >>> 0;
+  x = Math.imul(x ^ (x >>> 16), 0x85ebca6b);
+  x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35);
+  x ^= x >>> 16;
+  return (x >>> 0) / 0xffffffff;
+}
+
+/**
  * Renders NPCs, couriers, and active effects each frame.
  * Reads the simulation; never writes to it.
  */
@@ -40,8 +53,14 @@ export class EntityLayer {
       // interpolate between prevPos and pos
       const ix = npc.prevPos.x + (npc.pos.x - npc.prevPos.x) * alpha;
       const iy = npc.prevPos.y + (npc.pos.y - npc.prevPos.y) * alpha;
-      sprite.x = ix * T + T / 2;
-      sprite.y = (iy + 1) * T;
+      // Deterministic per-NPC sub-tile offset so multiple NPCs on the same
+      // tile spread out visually instead of stacking pixel-perfect on top of
+      // each other. Derived from npc.seed (already deterministic + persisted)
+      // so the offset is stable across reloads and saves.
+      const ox = (hash01(npc.seed) - 0.5) * 0.6;    // ±0.30 tiles horizontal
+      const oy = (hash01(npc.seed * 7919) - 0.5) * 0.35; // ±0.17 tiles vertical
+      sprite.x = (ix + ox) * T + T / 2;
+      sprite.y = (iy + oy + 1) * T;
       sprite.zIndex = sprite.y;
       // simple frame cycling when walking
       if (npc.activity === "walking") {

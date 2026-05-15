@@ -14,6 +14,7 @@ import { EntityLayer } from "./layers/EntityLayer";
 import { WeatherLayer } from "./layers/WeatherLayer";
 import { ParallaxBackground } from "./layers/ParallaxBackground";
 import { CrtOverlay } from "./layers/CrtOverlay";
+import { BorderLayer } from "./layers/BorderLayer";
 
 export interface PixiAppOptions {
   world: World;
@@ -31,6 +32,7 @@ export class PixiApp {
   tileRenderer!: TileRenderer;
   entityLayer!: EntityLayer;
   structureLayer!: StructureLayer;
+  borderLayer!: BorderLayer;
   weatherLayer!: WeatherLayer;
   parallax = new ParallaxBackground();
   worldStage = new Container();
@@ -87,10 +89,14 @@ export class PixiApp {
 
     this.tileRenderer = new TileRenderer(this.opts.world.map, this.factory);
     this.structureLayer = new StructureLayer(this.opts.world.map, this.factory);
+    this.borderLayer = new BorderLayer(this.opts.world);
     this.entityLayer = new EntityLayer(this.opts.world, this.factory);
     this.weatherLayer = new WeatherLayer(this.opts.world, this.factory);
 
     this.worldStage.addChild(this.tileRenderer.container);
+    // Border sits between tiles and structures so structure sprites stamp
+    // over it cleanly but the outline draws on top of the bare terrain.
+    this.worldStage.addChild(this.borderLayer.container);
     this.worldStage.addChild(this.structureLayer.container);
     this.worldStage.addChild(this.entityLayer.container);
     this.worldStage.addChild(this.weatherLayer.container);
@@ -184,6 +190,7 @@ export class PixiApp {
     // Called every frame so newly-constructed buildings (mill, watchtower,
     // shrine) appear without restarting the renderer.
     this.structureLayer.reconcile();
+    this.borderLayer.update();
     this.entityLayer.update(dt, this.alpha, this.opts.world.state.time);
     this.weatherLayer.update(dt, { minX, minY, maxX, maxY });
 

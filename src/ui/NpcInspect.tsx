@@ -52,12 +52,18 @@ export function NpcInspect({
         const T = 32;
         const tileX = (px - rect.width / 2) / (T * cam.zoom) + cam.x;
         const tileY = (py - rect.height / 2) / (T * cam.zoom) + cam.y;
-        // find nearest NPC within ~1 tile
+        // find nearest NPC within ~1 tile. NPCs are visually offset by a
+        // deterministic per-seed amount (see EntityLayer.update) so the
+        // sprite the cursor is over isn't at npc.pos but at npc.pos + offset.
+        // Apply the same offset here so the hover lands on the right NPC
+        // when several share a tile.
         let best: NPC | null = null;
         let bestDist = 1.2;
         for (const n of world.npcs) {
-          const dx = n.pos.x - tileX;
-          const dy = n.pos.y - tileY;
+          const ox = (hashOffset01(n.seed) - 0.5) * 0.6;
+          const oy = (hashOffset01(n.seed * 7919) - 0.5) * 0.35;
+          const dx = n.pos.x + ox - tileX;
+          const dy = n.pos.y + oy - tileY;
           const d = Math.hypot(dx, dy);
           if (d < bestDist) {
             best = n;
@@ -128,4 +134,16 @@ export function NpcInspect({
 
 function pretty(id: string) {
   return id ? id.charAt(0).toUpperCase() + id.slice(1) : "the kingdom";
+}
+
+/**
+ * Match EntityLayer's hash01 — keeps hover detection in lockstep with the
+ * deterministic per-seed sub-tile offsets the renderer applies to NPCs.
+ */
+function hashOffset01(n: number): number {
+  let x = (n | 0) >>> 0;
+  x = Math.imul(x ^ (x >>> 16), 0x85ebca6b);
+  x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35);
+  x ^= x >>> 16;
+  return (x >>> 0) / 0xffffffff;
 }
