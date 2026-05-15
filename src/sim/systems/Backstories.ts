@@ -37,6 +37,10 @@ const ORIGINS: readonly string[] = [
   "from a long road and a longer winter",
   "from over the eastern hills",
   "from the docks at Rivermouth",
+  "from a charcoal-burner's hut at the edge of the old forest",
+  "from a windswept island the maps only half-remember",
+  "from the abbey at Coldspring, where they had been a novice",
+  "from a fishing camp on a coast the chronicler had to be told twice to spell",
 ];
 
 const CARRYING: readonly string[] = [
@@ -46,6 +50,10 @@ const CARRYING: readonly string[] = [
   "carrying a sealed letter they would not let anyone read",
   "carrying a single bag of seeds, carefully wrapped",
   "carrying news from somewhere they refused to name",
+  "carrying a battered lute with two of its strings replaced by horsehair",
+  "carrying a folded cloak that smelled faintly of pine smoke",
+  "carrying a small bird in a wicker cage that whistled every quarter hour",
+  "carrying a leather-bound ledger of debts owed to people they would not name",
 ];
 
 const STATED_REASONS: readonly string[] = [
@@ -55,6 +63,10 @@ const STATED_REASONS: readonly string[] = [
   "and said an old aunt had once mentioned the place fondly",
   "and claimed they had walked here in a dream",
   "and produced a small token that the captain recognized at once",
+  "and said the stars had been clearer over this kingdom for the last three nights",
+  "and asked if anyone here remembered a stonemason who used to sing while he worked",
+  "and confessed they had been told never to return home, and had at last believed it",
+  "and said only that they had run out of roads and chosen the prettiest of the remaining gates",
 ];
 
 const TRADES: readonly string[] = [
@@ -64,6 +76,10 @@ const TRADES: readonly string[] = [
   "They said they had been a soldier once and would prefer not to be again.",
   "They said they could read four languages, three of them dead.",
   "They said they sang at funerals and asked if the kingdom had any need.",
+  "They said they knew the names of every herb that grew north of the river.",
+  "They said they had once been a courier and could still outwalk a horse on a wet road.",
+  "They said they could fix a clock if they were given enough time and enough quiet.",
+  "They said they had no trade at all, but were a steady hand at almost everything.",
 ];
 
 /**

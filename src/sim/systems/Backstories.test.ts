@@ -43,6 +43,19 @@ describe("backstoryFor", () => {
       const last = s.split(". ").pop() ?? "";
       trades.add(last);
     }
-    expect(trades.size).toBeGreaterThanOrEqual(4);
+    // Pools were expanded to 10 entries each — variety bar moves accordingly.
+    expect(trades.size).toBeGreaterThanOrEqual(8);
+  });
+
+  it("over many seeds, exercises a wide swath of the origin pool", () => {
+    const origins = new Set<string>();
+    for (let i = 0; i < 200; i++) {
+      const s = backstoryFor(`Test${i}`, i * 7919);
+      // Origin clause sits between "arrived " and the first comma.
+      const m = s.match(/^[^\s]+ arrived ([^,]+),/);
+      if (m) origins.add(m[1]);
+    }
+    // With pools of 10 and 200 trials, we should hit at least 8 distinct origins.
+    expect(origins.size).toBeGreaterThanOrEqual(8);
   });
 });
