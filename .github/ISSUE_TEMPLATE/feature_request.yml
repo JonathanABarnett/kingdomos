@@ -1,0 +1,46 @@
+name: Feature request
+description: Suggest a new system, content piece, or improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        KingdomOS leans cozy. Features that add stakes, complexity, or grind have a higher bar.
+        Features that add warmth, texture, or shareability have a lower one.
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: What's the idea?
+      description: One paragraph. What would the player see / do / experience?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: What kind of feature?
+      options:
+        - New content (quest arc, decision archetype, narrative branch, holiday)
+        - New mechanic (sim system, court role, NPC behavior)
+        - UI / UX polish
+        - New integration (data source feeding world events)
+        - Visual / audio / atmosphere
+        - Tooling / developer experience
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why does this help?
+      description: What does it unlock — emotional, narrative, or mechanical? Who would care?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Anything you've considered as an alternative?
+      description: Existing features it might overlap with, or simpler versions worth trying first.

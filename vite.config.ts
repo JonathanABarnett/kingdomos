@@ -4,7 +4,14 @@ import path from "node:path";
 
 const host = process.env.TAURI_DEV_HOST;
 
+// When deploying to GitHub Pages the site lives at
+// https://<user>.github.io/<repo>/, so assets need a non-root base path.
+// Set GITHUB_PAGES_BASE=/kingdomos/ at build time (the Pages workflow does this).
+// Local dev + Tauri builds + itch.io HTML5 deploys leave it unset → "/" base.
+const base = process.env.GITHUB_PAGES_BASE ?? "/";
+
 export default defineConfig({
+  base,
   plugins: [react()],
   resolve: {
     alias: {

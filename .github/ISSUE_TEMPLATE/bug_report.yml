@@ -1,0 +1,76 @@
+name: Bug report
+description: Something broke or behaved unexpectedly in KingdomOS
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. The more specific the repro, the faster the fix.
+        For visual glitches, attaching a screenshot or a Photo Mode capture helps a lot.
+
+  - type: input
+    id: kingdom-day
+    attributes:
+      label: What day was your kingdom on?
+      description: From the HUD or stats panel — helps reproduce time-sensitive bugs (succession, anniversaries, threats).
+      placeholder: e.g. Day 47, Year 2
+
+  - type: dropdown
+    id: build
+    attributes:
+      label: Build mode
+      options:
+        - Browser (npm run dev)
+        - Tauri desktop (npm run tauri:dev)
+        - Production build (npm run build)
+        - itch.io / hosted demo
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS + browser/Tauri version
+      placeholder: e.g. Windows 11, Chrome 131 | macOS 15.1, Tauri 2.1
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Numbered list, as specific as possible. Mention any settings toggles (CRT, streamer mode, integrations) you had on.
+      placeholder: |
+        1. Found a new kingdom with seed [if known]
+        2. Appoint Berta as Captain of the Guard
+        3. Drive ~10 in-world days
+        4. Storm rolls in anyway
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened
+    validations:
+      required: true
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Console errors (DevTools → Console)
+      description: If applicable. Paste in a code block.
+      render: shell
+
+  - type: textarea
+    id: save
+    attributes:
+      label: Attach a save export?
+      description: Optional but extremely helpful. Settings → "Export save" downloads a `.kingdomos.json`. Drop it here or paste a link.

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Architecture / how-does-this-work questions
+    url: https://github.com/JonathanABarnett/kingdomos/blob/main/CLAUDE.md
+    about: The full developer tour lives in CLAUDE.md — recipes for adding new event kinds, achievements, quest arcs, NPC roles, etc.
+  - name: Setting up an integration (git, fs, Twitch)
+    url: https://github.com/JonathanABarnett/kingdomos/blob/main/docs/INTEGRATIONS.md
+    about: Wiring guide for each ambient signal source.

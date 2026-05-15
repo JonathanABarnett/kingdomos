@@ -215,6 +215,7 @@ The monarch sprite is permanently player-designed — there's no artwork to repl
 
 ## Distribution paths
 
+- **GitHub Pages** — live demo at https://JonathanABarnett.github.io/kingdomos/ (auto-deployed on every push to `main` via `.github/workflows/pages.yml`). Free, no setup beyond enabling Pages in repo settings.
 - **itch.io HTML5** — `npm run build`, zip `dist/`, upload. Pay-what-you-want or free. No Rust needed. Or set up the GitHub secrets and let `npm run release` push for you.
 - **Steam (desktop)** — `npm run tauri:build` on a Rust-enabled machine, package the `.msi`, submit to Steam Direct.
 - **OBS Browser Source** — point at your running dev URL with Streamer Mode on; viewers see your kingdom react to their subs in real time.
@@ -231,7 +232,7 @@ The monarch sprite is permanently player-designed — there's no artwork to repl
 
 ## License
 
-MIT-flavored, exact terms TBD. The code is yours to fork; the name "KingdomOS" is reserved for the canonical build.
+[MIT](LICENSE). The code is yours to fork. The name "KingdomOS" is reserved for the canonical build at [github.com/JonathanABarnett/kingdomos](https://github.com/JonathanABarnett/kingdomos); please rename your fork if you publish a derivative work.
 
 ## Acknowledgments
 
