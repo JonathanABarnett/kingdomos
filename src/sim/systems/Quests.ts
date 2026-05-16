@@ -466,6 +466,103 @@ const ARCS: ArcDef[] = [
     ],
   },
   {
+    id: "tournament",
+    title: "The Tournament",
+    // Five days, pinned to the castle. Heralds → champions chosen →
+    // practice → tournament day → celebration + a relic for the vault.
+    // Champion + winner picked deterministically from the seeded RNG so the
+    // arc round-trips through save/replay.
+    phases: [
+      {
+        onDay: 0,
+        write: ({ journal, world }) => {
+          const castle = world.map.structures.find((s) => s.kind === "castle");
+          journal.write(
+            "Heralds proclaimed a tournament. Every town will send a champion to the keep within the week.",
+            "milestone",
+            castle?.id,
+          );
+          if (castle) {
+            world.bus.publish(
+              makeEvent("festival", {
+                source: "narrative",
+                intensity: 0.45,
+                duration_ms: 20_000,
+                payload: { structure: castle.id, label: "tournament proclaimed" },
+              }),
+            );
+          }
+        },
+      },
+      {
+        onDay: 1,
+        write: ({ journal, world, rand }) => {
+          const castle = world.map.structures.find((s) => s.kind === "castle");
+          const champion = pickChampion(world, rand);
+          journal.write(
+            `Champions were named at the keep. ${champion} was chosen to ride first into the lists.`,
+            "event",
+            castle?.id,
+          );
+        },
+      },
+      {
+        onDay: 2,
+        write: ({ journal, world }) => {
+          const forge = world.map.structures.find((s) => s.kind === "forge");
+          journal.write(
+            "The forge ran late into the evening; helms were polished, lances re-tipped, every shield re-painted in its town's colors.",
+            "event",
+            forge?.id,
+          );
+          if (forge) {
+            world.bus.publish(
+              makeEvent("forge", {
+                source: "narrative",
+                intensity: 0.6,
+                payload: { structure: forge.id, label: "tournament arms" },
+              }),
+            );
+          }
+        },
+      },
+      {
+        onDay: 3,
+        write: ({ journal, world, rand }) => {
+          const castle = world.map.structures.find((s) => s.kind === "castle");
+          const winner = pickChampion(world, rand);
+          journal.write(
+            `The lists opened at noon and closed at dusk. After a dozen passes, ${winner} unhorsed every challenger and was named champion.`,
+            "milestone",
+            castle?.id,
+          );
+          if (castle) {
+            world.bus.publish(
+              makeEvent("festival", {
+                source: "narrative",
+                intensity: 0.85,
+                duration_ms: 40_000,
+                payload: { structure: castle.id, label: "the tournament" },
+              }),
+            );
+          }
+        },
+      },
+      {
+        onDay: 4,
+        write: ({ journal, world }) => {
+          const castle = world.map.structures.find((s) => s.kind === "castle");
+          journal.write(
+            "The champion's cup was placed in the vault — a small thing of beaten silver, but the kingdom's first.",
+            "milestone",
+            castle?.id,
+          );
+          world.treasury.acquire("relic", "the champion's cup");
+        },
+      },
+    ],
+  },
+  {
     id: "scholar_discovery",
     title: "A discovery at the scriptorium",
     phases: [
@@ -1045,4 +1142,18 @@ function pickTown(
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/**
+ * Pick an adult, non-monarch NPC to stand in for a "champion" or similar
+ * named role. Deterministic against the seeded RNG, so a given seed + arc
+ * day always names the same villager. Falls back to a generic descriptor
+ * if the roster has no eligible adults (very young kingdom).
+ */
+function pickChampion(world: World, rand: () => number): string {
+  const eligible = world.npcs.filter(
+    (n) => n.role !== "monarch" && (n.age ?? 30) >= 18,
+  );
+  if (!eligible.length) return "a young rider from the towns";
+  return eligible[Math.floor(rand() * eligible.length)].name ?? "a champion of the realm";
 }

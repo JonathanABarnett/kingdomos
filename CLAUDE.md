@@ -72,7 +72,7 @@ src/
 │       ├── Calendar.ts       # wall-clock anchored day/year/season
 │       ├── Journal.ts        # narrative entry writer (subscribes to bus, 5 entry kinds)
 │       ├── LifeEvents.ts     # aging, marriage, birth, death (trait-flavored, 7 phrasing variants each)
-│       ├── Quests.ts         # 11 multi-day arcs + 10 decision archetypes — all seeded
+│       ├── Quests.ts         # 12 multi-day arcs + 10 decision archetypes — all seeded
 │       ├── Decisions.ts      # interactive decision queue with timed expiry
 │       ├── Succession.ts     # monarch death + heir ascension
 │       ├── Treasury.ts       # vault of artifacts across all monarchs (cap 200)
@@ -283,7 +283,7 @@ Mouse: click NPC → camera follows; click structure → inspector → "Step ins
 |---|---|
 | Achievements | 27 (17 visible + 10 hidden mysteries) |
 | Aspirations (player-facing goals) | 21 in pool, 3 active at a time |
-| Quest arcs | 11 (`traveler`, `festival_prep`, `rival_banner`, `scholar_discovery`, `wandering_cat`, `river_flood`, `lost_child`, `old_friend_returns`, `village_well`, `fence_dispute`, `letter_from_afar`) |
+| Quest arcs | 12 (`traveler`, `festival_prep`, `rival_banner`, `scholar_discovery`, `wandering_cat`, `river_flood`, `lost_child`, `old_friend_returns`, `village_well`, `fence_dispute`, `letter_from_afar`, `tournament`) |
 | Decision archetypes | 10 (petition, merchant, festival, stranger, levy, pilgrim, boundary dispute, astronomer's portent, stray dog, anonymous gift) |
 | Narrative director branches | 9 (courier, research, forge, monster, festival, mining, airship, pilgrim, lone fisher) with ~85 label variants |
 | Court speech lines | 30 (10 per role × 3 roles), deterministic per seed |

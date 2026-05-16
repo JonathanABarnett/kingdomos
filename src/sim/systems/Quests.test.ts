@@ -193,6 +193,69 @@ describe("Quests — phase deduplication regression", () => {
     }
   });
 
+  it("tournament arc fires 5 phases over 5 days, awards a relic, and pins to the castle", () => {
+    const w = new World({ seed: 1234 });
+    const entries: Array<{ text: string; kind: string; targetStructureId?: string }> = [];
+    w.onJournal = (e) =>
+      entries.push({ text: e.text, kind: e.kind, targetStructureId: e.targetStructureId });
+    const internal = w.quests as unknown as {
+      active: {
+        arcId: string;
+        startDay: number;
+        flavor: string;
+        firedPhases: number[];
+      } | null;
+      lastRolledDay: number;
+    };
+    internal.active = { arcId: "tournament", startDay: 1, flavor: "—", firedPhases: [] };
+    const vaultBefore = w.treasury.count();
+    for (let d = 1; d <= 6; d++) {
+      w.state.day = d;
+      internal.lastRolledDay = d;
+      w.quests.tick();
+    }
+    // All 5 phase lines should have surfaced. Match each phase by an opener
+    // that is unique to the arc body (avoids matching the Treasury entry the
+    // final phase's acquire() also writes for the cup).
+    const arcLines = entries.filter((e) =>
+      /^Heralds proclaimed|^Champions were named|^The forge ran late|^The lists opened|^The champion's cup was placed/.test(e.text),
+    );
+    expect(arcLines.length).toBe(5);
+    const castle = w.map.structures.find((s) => s.kind === "castle");
+    // First phase + final phase pin to the castle.
+    expect(arcLines[0].targetStructureId).toBe(castle?.id);
+    expect(arcLines[arcLines.length - 1].targetStructureId).toBe(castle?.id);
+    // Vault gains exactly one relic from the arc's final phase.
+    expect(w.treasury.count()).toBe(vaultBefore + 1);
+  });
+
+  it("tournament arc is deterministic against the seed (same seed → same champion line)", () => {
+    function runOnce(): string {
+      const w = new World({ seed: 9876 });
+      const lines: string[] = [];
+      w.onJournal = (e) => {
+        if (/unhorsed every challenger/.test(e.text)) lines.push(e.text);
+      };
+      const internal = w.quests as unknown as {
+        active: {
+          arcId: string;
+          startDay: number;
+          flavor: string;
+          firedPhases: number[];
+        } | null;
+        lastRolledDay: number;
+      };
+      internal.active = { arcId: "tournament", startDay: 1, flavor: "—", firedPhases: [] };
+      for (let d = 1; d <= 6; d++) {
+        w.state.day = d;
+        internal.lastRolledDay = d;
+        w.quests.tick();
+      }
+      return lines[0] ?? "";
+    }
+    expect(runOnce()).toBe(runOnce());
+  });
+
   it("after the last phase fires, the active arc is cleared and stops re-firing", () => {
     const w = new World({ seed: 42 });
     const internal = w.quests as unknown as {
