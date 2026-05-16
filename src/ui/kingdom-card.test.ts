@@ -8,7 +8,7 @@ import {
   pickSparklineSeries,
   compactNumber,
 } from "./kingdom-card-data";
-import { drawKingdomCard } from "./kingdom-card-renderer";
+import { drawKingdomCard, CARD_TEMPLATES } from "./kingdom-card-renderer";
 
 function entry(
   text: string,
@@ -445,6 +445,58 @@ describe("drawKingdomCard (smoke)", () => {
     );
     expect(ctx.calls.some((c) => c.method === "stroke")).toBe(true);
     expect(ctx.calls.some((c) => c.method === "lineTo")).toBe(true);
+  });
+
+  it("CARD_TEMPLATES exposes parchment + heraldic + modern, in that order", () => {
+    const ids = CARD_TEMPLATES.map((t) => t.id);
+    expect(ids).toEqual(["parchment", "heraldic", "modern"]);
+    for (const t of CARD_TEMPLATES) {
+      expect(t.label.length).toBeGreaterThan(0);
+      expect(t.blurb.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("renders all three templates without throwing", () => {
+    const input = {
+      kingdomName: "Aurelia",
+      monarchName: "Elara",
+      petName: "Biscuit",
+      bannerColor: "#b45309",
+      day: 47,
+      year: 2,
+      generation: 1,
+      milestones: ["a wedding"],
+      stats: { population: 12, gold: 100, vault: 3 },
+    };
+    for (const t of CARD_TEMPLATES) {
+      const ctx = makeMockCtx();
+      expect(() => {
+        drawKingdomCard(ctx, input, { template: t.id });
+      }).not.toThrow();
+      // Every template should still surface the title.
+      const filled = ctx.calls.filter((c) => c.method === "fillText").map((c) => String(c.args[0]));
+      expect(filled.some((s) => s.includes("Aurelia"))).toBe(true);
+    }
+  });
+
+  it("falls back to the parchment theme when an unknown template id is passed", () => {
+    const ctx = makeMockCtx();
+    expect(() => {
+      drawKingdomCard(
+        ctx,
+        {
+          kingdomName: "K",
+          monarchName: "M",
+          bannerColor: "#b45309",
+          day: 1,
+          year: 1,
+          generation: 1,
+          milestones: [],
+        },
+        // Cast: deliberately invalid id to exercise the fallback path.
+        { template: "made-up-template" as unknown as "parchment" },
+      );
+    }).not.toThrow();
   });
 
   it("sparkline is skipped when fewer than 2 samples are available", () => {

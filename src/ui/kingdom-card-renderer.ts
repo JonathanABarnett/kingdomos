@@ -14,7 +14,17 @@
 import type { KingdomCardInput, KingdomCardStats } from "./kingdom-card-data";
 import { CARD_WIDTH, CARD_HEIGHT, trimMilestoneLine, compactNumber, pickSparklineSeries } from "./kingdom-card-data";
 
-export type CardTemplate = "parchment";
+export type CardTemplate = "parchment" | "heraldic" | "modern";
+
+/**
+ * Stable list of every template id, in the order the picker UI should show
+ * them. Exposed so the UI doesn't drift out of sync with the renderer.
+ */
+export const CARD_TEMPLATES: ReadonlyArray<{ id: CardTemplate; label: string; blurb: string }> = [
+  { id: "parchment", label: "Parchment", blurb: "warm sepia, like an old chronicle" },
+  { id: "heraldic", label: "Heraldic", blurb: "dark navy and gold, formal banner" },
+  { id: "modern", label: "Modern", blurb: "clean off-white, your banner color as accent" },
+];
 
 export interface RenderOpts {
   template?: CardTemplate;
@@ -41,16 +51,100 @@ export function drawKingdomCard(
   const template = opts.template ?? "parchment";
   ctx.imageSmoothingEnabled = false;
 
-  switch (template) {
-    case "parchment":
-      drawParchmentTemplate(ctx, input);
-      break;
-  }
+  const theme = THEMES[template] ?? THEMES.parchment;
+  drawBackground(ctx, input, theme);
+  drawForeground(ctx, input, theme);
   // Sprites layer on top — same for every template, anchored bottom-right.
   if (opts.monarchSprite || opts.petSprite) {
-    drawPortraitInset(ctx, input, opts);
+    drawPortraitInset(ctx, input, opts, theme);
   }
 }
+
+/**
+ * Visual theme used to paint a card. Every template is just a named
+ * `CardTheme` — the layout itself is shared. Adding a fourth template
+ * means picking colors and a background-paint function, nothing more.
+ */
+interface CardTheme {
+  background: (ctx: CanvasRenderingContext2D, input: KingdomCardInput) => void;
+  /** Color of the big "Kingdom of X" title. */
+  title: string;
+  /** Color of the italic "under …" subtitle. */
+  subtitle: string;
+  /** Color of the horizontal rule under the title. */
+  divider: string;
+  /** Color of stat-badge numeric values. */
+  statValue: string;
+  /** Color of stat-badge text labels. */
+  statLabel: string;
+  /** Color of the separator dot between stat badges. */
+  statSep: string;
+  /** Color of the bullet dot in front of each milestone line. */
+  bullet: string;
+  /** Color of milestone body text. */
+  body: string;
+  /** Color of the date stamp ("Day 47 · Year 2"). */
+  footerDate: string;
+  /** Color of the wordmark line at the bottom-left. */
+  footerWordmark: string;
+  /** Background of the portrait plate. */
+  plateFill: string;
+  /** Highlight rim along the top + left of the plate. */
+  plateHighlight: string;
+  /** Color of the small italic caption under the plate. */
+  reignCaption: string;
+}
+
+const THEMES: Record<CardTemplate, CardTheme> = {
+  parchment: {
+    background: drawParchmentBackground,
+    title: "#5b2a08",
+    subtitle: "#7c2d12",
+    divider: "rgba(120, 53, 15, 0.5)",
+    statValue: "#5b2a08",
+    statLabel: "rgba(120, 53, 15, 0.85)",
+    statSep: "rgba(146, 64, 14, 0.55)",
+    bullet: "rgba(120, 53, 15, 0.75)",
+    body: "#3f2616",
+    footerDate: "#92400e",
+    footerWordmark: "rgba(146, 64, 14, 0.85)",
+    plateFill: "rgba(245, 200, 130, 0.9)",
+    plateHighlight: "rgba(255, 240, 190, 0.6)",
+    reignCaption: "rgba(80, 40, 15, 0.7)",
+  },
+  heraldic: {
+    background: drawHeraldicBackground,
+    title: "#fde68a", // gold leaf on navy
+    subtitle: "#fbbf24",
+    divider: "rgba(251, 191, 36, 0.55)",
+    statValue: "#fde68a",
+    statLabel: "rgba(251, 191, 36, 0.85)",
+    statSep: "rgba(251, 191, 36, 0.45)",
+    bullet: "rgba(251, 191, 36, 0.85)",
+    body: "#fef3c7",
+    footerDate: "#fbbf24",
+    footerWordmark: "rgba(251, 191, 36, 0.7)",
+    plateFill: "rgba(30, 41, 59, 0.85)",
+    plateHighlight: "rgba(120, 113, 108, 0.4)",
+    reignCaption: "rgba(251, 191, 36, 0.7)",
+  },
+  modern: {
+    background: drawModernBackground,
+    title: "#1c1917",
+    subtitle: "#525252",
+    divider: "rgba(28, 25, 23, 0.18)",
+    statValue: "#1c1917",
+    statLabel: "rgba(82, 82, 91, 0.95)",
+    statSep: "rgba(82, 82, 91, 0.4)",
+    bullet: "", // filled at runtime from banner color
+    body: "#1c1917",
+    footerDate: "#525252",
+    footerWordmark: "rgba(82, 82, 91, 0.75)",
+    plateFill: "rgba(250, 250, 249, 1)",
+    plateHighlight: "rgba(231, 229, 228, 0.8)",
+    reignCaption: "rgba(82, 82, 91, 0.75)",
+  },
+};
 
 /**
  * Stats badge row. Centered under the divider, four pills max:
@@ -60,7 +154,11 @@ export function drawKingdomCard(
  * >=1 in the case of achievement totals). The row stays compact even when
  * a brand-new kingdom only has a population badge to show.
  */
-function drawStatsRow(ctx: CanvasRenderingContext2D, stats: KingdomCardStats): void {
+function drawStatsRow(
+  ctx: CanvasRenderingContext2D,
+  stats: KingdomCardStats,
+  theme: CardTheme,
+): void {
   const badges: Array<{ label: string; value: string }> = [];
   if (stats.population !== undefined && stats.population > 0) {
     badges.push({
@@ -106,21 +204,18 @@ function drawStatsRow(ctx: CanvasRenderingContext2D, stats: KingdomCardStats): v
 
   for (let i = 0; i < badges.length; i++) {
     const b = badges[i];
-    // Value: darker sepia, bold
-    ctx.fillStyle = "#5b2a08";
+    ctx.fillStyle = theme.statValue;
     const v = b.value;
     ctx.fillText(v, x, y);
     const vw = (ctx.measureText(v).width as number) || v.length * 13;
     x += vw + 6;
-    // Label: lighter sepia, smaller
     ctx.font = "20px 'Georgia', 'Times New Roman', serif";
-    ctx.fillStyle = "rgba(120, 53, 15, 0.85)";
+    ctx.fillStyle = theme.statLabel;
     ctx.fillText(b.label, x, y);
     const lw = (ctx.measureText(b.label).width as number) || b.label.length * 10;
     x += lw;
-    // Separator (skip after the last)
     if (i < badges.length - 1) {
-      ctx.fillStyle = "rgba(146, 64, 14, 0.55)";
+      ctx.fillStyle = theme.statSep;
       ctx.fillText(sep, x, y);
       const sw = (ctx.measureText(sep).width as number) || sep.length * 10;
       x += sw;
@@ -187,6 +282,7 @@ function drawPortraitInset(
   ctx: CanvasRenderingContext2D,
   input: KingdomCardInput,
   opts: RenderOpts,
+  theme: CardTheme,
 ): void {
   // Inset geometry. 200×130 plate anchored to the bottom-right, leaving room
   // for the wordmark below it. Within the plate: monarch on the left at 3×
@@ -196,11 +292,11 @@ function drawPortraitInset(
   const plateX = CARD_WIDTH - plateW - 80;
   const plateY = CARD_HEIGHT - plateH - 80;
 
-  // Plate background — slightly darker parchment with the banner-color trim.
-  ctx.fillStyle = "rgba(245, 200, 130, 0.9)";
+  // Plate background — pulled from the theme so the inset matches the card.
+  ctx.fillStyle = theme.plateFill;
   ctx.fillRect(plateX, plateY, plateW, plateH);
   // Inner highlight rim
-  ctx.fillStyle = "rgba(255, 240, 190, 0.6)";
+  ctx.fillStyle = theme.plateHighlight;
   ctx.fillRect(plateX, plateY, plateW, 2);
   ctx.fillRect(plateX, plateY, 2, plateH);
   // Banner-color trim (bottom + right) — gives it a coin/medallion feel
@@ -236,7 +332,7 @@ function drawPortraitInset(
   }
 
   // Small caption below the plate: "long may they reign" — tasteful, optional.
-  ctx.fillStyle = "rgba(80, 40, 15, 0.7)";
+  ctx.fillStyle = theme.reignCaption;
   ctx.font = "italic 16px 'Georgia', 'Times New Roman', serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
@@ -249,18 +345,102 @@ function drawPortraitInset(
 
 // ── Templates ──────────────────────────────────────────────────────────
 
-function drawParchmentTemplate(ctx: CanvasRenderingContext2D, input: KingdomCardInput): void {
-  // Background — warm sepia gradient with a soft burned-edge vignette.
+/**
+ * Paint the card background using the theme's `background` callback. Each
+ * theme is responsible for filling the entire CARD_WIDTH × CARD_HEIGHT
+ * surface, painting any decorative elements (banner stripe, vignette, etc.),
+ * and stopping. Layout/foreground happens in drawForeground.
+ */
+function drawBackground(
+  ctx: CanvasRenderingContext2D,
+  input: KingdomCardInput,
+  theme: CardTheme,
+): void {
+  theme.background(ctx, input);
+}
+
+/**
+ * Paint the text layout — title, subtitle, divider, stats row, milestones,
+ * footer. Same geometry for every theme; colors come from the theme.
+ */
+function drawForeground(
+  ctx: CanvasRenderingContext2D,
+  input: KingdomCardInput,
+  theme: CardTheme,
+): void {
+  // Kingdom name
+  ctx.fillStyle = theme.title;
+  ctx.font = "bold 88px 'Georgia', 'Times New Roman', serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(`Kingdom of ${input.kingdomName}`, CARD_WIDTH / 2, 150, CARD_WIDTH - 160);
+
+  // Subtitle
+  ctx.fillStyle = theme.subtitle;
+  ctx.font = "italic 32px 'Georgia', 'Times New Roman', serif";
+  const subtitle = `under ${input.monarchName} · Generation ${input.generation}`;
+  ctx.fillText(subtitle, CARD_WIDTH / 2, 215, CARD_WIDTH - 160);
+
+  // Divider
+  ctx.fillStyle = theme.divider;
+  ctx.fillRect(CARD_WIDTH / 2 - 80, 255, 160, 2);
+
+  // Stats row
+  if (input.stats) {
+    drawStatsRow(ctx, input.stats, theme);
+  }
+
+  // Milestones
+  ctx.textAlign = "left";
+  ctx.font = "26px 'Georgia', 'Times New Roman', serif";
+  const milestonesX = 100;
+  const milestonesY = input.stats ? 335 : 305;
+  const lineHeight = 42;
+  const lines = input.milestones.length
+    ? input.milestones
+    : ["The chronicle is young. Come back in a few days."];
+  const bulletColor = theme.bullet || safeHex(input.bannerColor, "#b45309");
+  for (let i = 0; i < lines.length; i++) {
+    const text = trimMilestoneLine(lines[i], 90);
+    const y = milestonesY + i * lineHeight;
+    ctx.fillStyle = bulletColor;
+    ctx.beginPath();
+    ctx.arc(milestonesX, y, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = theme.body;
+    ctx.fillText(text, milestonesX + 18, y + 1, CARD_WIDTH - milestonesX - 80);
+  }
+
+  // Footer (left side; portrait inset reserves the right).
+  ctx.font = "20px 'Georgia', 'Times New Roman', serif";
+  ctx.fillStyle = theme.footerDate;
+  ctx.textBaseline = "alphabetic";
+  ctx.textAlign = "left";
+  ctx.fillText(`Day ${input.day} · Year ${input.year}`, 100, CARD_HEIGHT - 60);
+
+  ctx.font = "bold 16px 'Georgia', 'Times New Roman', serif";
+  ctx.fillStyle = theme.footerWordmark;
+  ctx.fillText("KingdomOS · jonathanabarnett.github.io/kingdomos", 100, CARD_HEIGHT - 32);
+
+  // Top-right ornament — three dots in the banner color (works on every bg).
+  ctx.fillStyle = safeHex(input.bannerColor, "#b45309");
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.arc(CARD_WIDTH - 86 + i * 16, 35, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// ── Background painters ────────────────────────────────────────────────
+
+function drawParchmentBackground(ctx: CanvasRenderingContext2D, input: KingdomCardInput): void {
   const bgGrad = ctx.createLinearGradient(0, 0, 0, CARD_HEIGHT);
   bgGrad.addColorStop(0, "#fde68a");
   bgGrad.addColorStop(1, "#fbcf6e");
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
-  // Mottling — deterministic so the same kingdom always renders identically.
-  // Uses a tiny LCG seeded off the kingdom name + day so a fresh card never
-  // looks the same as the previous one, but a re-render of the same card
-  // does.
+  // Deterministic mottling — same kingdom + day always renders identically.
   const seed = hashSeed(`${input.kingdomName}|${input.day}|${input.year}`);
   const rng = mulberry32(seed);
   for (let i = 0; i < 80; i++) {
@@ -271,7 +451,7 @@ function drawParchmentTemplate(ctx: CanvasRenderingContext2D, input: KingdomCard
     ctx.fillRect(x, y, w, 1);
   }
 
-  // Vignette
+  // Burned-edge vignette
   const vGrad = ctx.createRadialGradient(
     CARD_WIDTH / 2, CARD_HEIGHT / 2, 100,
     CARD_WIDTH / 2, CARD_HEIGHT / 2, CARD_WIDTH * 0.65,
@@ -281,83 +461,62 @@ function drawParchmentTemplate(ctx: CanvasRenderingContext2D, input: KingdomCard
   ctx.fillStyle = vGrad;
   ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
-  // Banner stripe along the top — uses the player's chosen banner color.
+  // Banner stripe
   const stripeY = 60;
-  const stripeH = 8;
   ctx.fillStyle = safeHex(input.bannerColor, "#b45309");
-  ctx.fillRect(60, stripeY, CARD_WIDTH - 120, stripeH);
-  // A subtle shadow under the stripe
+  ctx.fillRect(60, stripeY, CARD_WIDTH - 120, 8);
   ctx.fillStyle = "rgba(40, 20, 10, 0.18)";
-  ctx.fillRect(60, stripeY + stripeH, CARD_WIDTH - 120, 2);
+  ctx.fillRect(60, stripeY + 8, CARD_WIDTH - 120, 2);
+}
 
-  // Kingdom name — big serif, centered, sepia-on-cream.
-  ctx.fillStyle = "#5b2a08";
-  ctx.font = "bold 88px 'Georgia', 'Times New Roman', serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(`Kingdom of ${input.kingdomName}`, CARD_WIDTH / 2, 150, CARD_WIDTH - 160);
+function drawHeraldicBackground(ctx: CanvasRenderingContext2D, input: KingdomCardInput): void {
+  // Deep navy → slate gradient.
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, CARD_HEIGHT);
+  bgGrad.addColorStop(0, "#0f172a");
+  bgGrad.addColorStop(1, "#1e293b");
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
-  // Subtitle — monarch line.
-  ctx.fillStyle = "#7c2d12";
-  ctx.font = "italic 32px 'Georgia', 'Times New Roman', serif";
-  const subtitle = `under ${input.monarchName} · Generation ${input.generation}`;
-  ctx.fillText(subtitle, CARD_WIDTH / 2, 215, CARD_WIDTH - 160);
-
-  // Divider rule
-  ctx.fillStyle = "rgba(120, 53, 15, 0.5)";
-  ctx.fillRect(CARD_WIDTH / 2 - 80, 255, 160, 2);
-
-  // Stats badge row — only drawn when stats are present. Keeps the visual
-  // weight balanced even when a player has only one or two badge-worthy
-  // numbers (we render exactly the badges that have meaningful values).
-  if (input.stats) {
-    drawStatsRow(ctx, input.stats);
-  }
-
-  // Milestones block — chronicle-style, left-aligned, with bullet dots.
-  // Y-anchor shifts down ~30px when the stats row is present.
-  ctx.textAlign = "left";
-  ctx.font = "26px 'Georgia', 'Times New Roman', serif";
-  ctx.fillStyle = "#3f2616";
-  const milestonesX = 100;
-  const milestonesY = input.stats ? 335 : 305;
-  const lineHeight = 42;
-  const lines = input.milestones.length
-    ? input.milestones
-    : ["The chronicle is young. Come back in a few days."];
-  for (let i = 0; i < lines.length; i++) {
-    const text = trimMilestoneLine(lines[i], 90);
-    const y = milestonesY + i * lineHeight;
-    // Bullet
-    ctx.fillStyle = "rgba(120, 53, 15, 0.75)";
+  // Diagonal hatch — subtle, deterministic per kingdom.
+  const seed = hashSeed(`heraldic|${input.kingdomName}|${input.day}|${input.year}`);
+  const rng = mulberry32(seed);
+  ctx.strokeStyle = "rgba(251, 191, 36, 0.04)";
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 24; i++) {
+    const x = rng() * CARD_WIDTH;
     ctx.beginPath();
-    ctx.arc(milestonesX, y, 5, 0, Math.PI * 2);
-    ctx.fill();
-    // Text
-    ctx.fillStyle = "#3f2616";
-    ctx.fillText(text, milestonesX + 18, y + 1, CARD_WIDTH - milestonesX - 80);
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x + 100, CARD_HEIGHT);
+    ctx.stroke();
   }
 
-  // Footer line — date stamp on the left, wordmark beneath the milestones.
-  // The bottom-right is reserved for the portrait inset when sprites are
-  // provided, so we keep both text elements on the left side of the card.
-  ctx.font = "20px 'Georgia', 'Times New Roman', serif";
-  ctx.fillStyle = "#92400e";
-  ctx.textBaseline = "alphabetic";
-  ctx.textAlign = "left";
-  ctx.fillText(`Day ${input.day} · Year ${input.year}`, 100, CARD_HEIGHT - 60);
+  // Gold inner border, leaving a deep-navy margin.
+  ctx.strokeStyle = safeHex(input.bannerColor, "#fbbf24");
+  ctx.lineWidth = 3;
+  ctx.strokeRect(28, 28, CARD_WIDTH - 56, CARD_HEIGHT - 56);
 
-  ctx.font = "bold 16px 'Georgia', 'Times New Roman', serif";
-  ctx.fillStyle = "rgba(146, 64, 14, 0.85)";
-  ctx.fillText("KingdomOS · jonathanabarnett.github.io/kingdomos", 100, CARD_HEIGHT - 32);
+  // Top-stripe replaced by a centered "banner" cross-piece in gold.
+  ctx.fillStyle = safeHex(input.bannerColor, "#fbbf24");
+  ctx.fillRect(60, 64, CARD_WIDTH - 120, 4);
+  ctx.fillRect(60, 84, CARD_WIDTH - 120, 1);
+}
 
-  // Top-right tiny ornament — three dots in the banner color.
+function drawModernBackground(ctx: CanvasRenderingContext2D, input: KingdomCardInput): void {
+  // Off-white background with a banner-color left rail. Clean, app-store-y.
+  ctx.fillStyle = "#fafaf9";
+  ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+
+  // Left rail — full-height column in the kingdom's banner color.
   ctx.fillStyle = safeHex(input.bannerColor, "#b45309");
-  for (let i = 0; i < 3; i++) {
-    ctx.beginPath();
-    ctx.arc(CARD_WIDTH - 86 + i * 16, 35, 4, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  ctx.fillRect(0, 0, 20, CARD_HEIGHT);
+
+  // Subtle horizontal hairline under the title region.
+  ctx.fillStyle = "rgba(28, 25, 23, 0.06)";
+  ctx.fillRect(60, 264, CARD_WIDTH - 120, 1);
+
+  // Bottom-edge brand stripe.
+  ctx.fillStyle = "rgba(28, 25, 23, 0.04)";
+  ctx.fillRect(60, CARD_HEIGHT - 78, CARD_WIDTH - 120, 1);
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────

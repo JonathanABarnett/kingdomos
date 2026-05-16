@@ -7,7 +7,7 @@ import {
   CARD_WIDTH,
   CARD_HEIGHT,
 } from "./kingdom-card-data";
-import { drawKingdomCard } from "./kingdom-card-renderer";
+import { drawKingdomCard, CARD_TEMPLATES, type CardTemplate } from "./kingdom-card-renderer";
 import { CanvasSurface, drawCharacter } from "../engine/CharacterRenderer";
 import { drawPet } from "../engine/PetSpec";
 import type { CharacterSpec } from "../engine/CharacterSpec";
@@ -69,6 +69,7 @@ export function KingdomCard({
   const achievements = useGameStore((s) => s.achievements);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const [template, setTemplate] = useState<CardTemplate>("parchment");
 
   useEffect(() => {
     if (!open || !world || !identity) return;
@@ -103,6 +104,7 @@ export function KingdomCard({
       const monarchImg = monarchSpriteCanvas(monarchSpec);
       const petImg = petSpec ? petSpriteCanvas(petSpec) : undefined;
       drawKingdomCard(ctx, input, {
+        template,
         monarchSprite: monarchImg,
         petSprite: petImg,
       });
@@ -110,7 +112,7 @@ export function KingdomCard({
     } catch (err) {
       console.warn("[KingdomCard] render failed", err);
     }
-  }, [open, world, identity, journal, monarchSpec, petSpec, achievements]);
+  }, [open, world, identity, journal, monarchSpec, petSpec, achievements, template]);
 
   // Esc-to-close
   useEffect(() => {
@@ -159,6 +161,20 @@ export function KingdomCard({
         <div className="kingdom-card-actions">
           <div className="kingdom-card-hint">
             A keepsake card you can share or save. Built from the chronicle.
+          </div>
+          <div className="kingdom-card-templates" role="radiogroup" aria-label="Card style">
+            {CARD_TEMPLATES.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTemplate(t.id)}
+                className={"kingdom-card-template-btn" + (template === t.id ? " active" : "")}
+                title={t.blurb}
+                role="radio"
+                aria-checked={template === t.id}
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
           <div className="kingdom-card-buttons">
             <button onClick={copyToClipboard} disabled={!dataUrl}>
