@@ -53,6 +53,14 @@ const HOLIDAYS: Holiday[] = [
       "On the equinox, the fields were blessed. The mill ran late into the evening.",
   },
   {
+    month: 4,
+    day: 5,
+    name: "The Greening",
+    journal: () =>
+      "The first true green of the year arrived in the hedgerows. Children brought handfuls of new leaves to the keep, where the court pretended to be surprised.",
+    structureKind: "town",
+  },
+  {
     month: 5,
     day: 1,
     name: "Bloomfest",
@@ -65,6 +73,22 @@ const HOLIDAYS: Holiday[] = [
     name: "Midsummer",
     journal: () =>
       "Bonfires lit every hilltop tonight. The longest day of the year, and the brightest.",
+  },
+  {
+    month: 7,
+    day: 14,
+    name: "The Long Walk",
+    journal: () =>
+      "An old midsummer pilgrimage — half the kingdom walked from town to town all day, and met at the wells at sundown to share water and stories.",
+    structureKind: "town",
+  },
+  {
+    month: 8,
+    day: 1,
+    name: "The First Sheaf",
+    journal: () =>
+      "The first sheaf of new wheat was carried into the mill in procession. The miller's hands shook as she set it down.",
+    structureKind: "town",
   },
   {
     month: 9,

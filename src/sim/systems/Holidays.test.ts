@@ -71,4 +71,31 @@ describe("Holidays", () => {
     const w = new World({ seed: 42 });
     expect(() => w.holidays.tick()).not.toThrow();
   });
+
+  it("fires The Long Walk on July 14 (covers the previously-empty mid-summer gap)", () => {
+    vi.setSystemTime(new Date(2025, 6, 14, 12, 0, 0)); // July 14
+    const w = new World({ seed: 42 });
+    w.holidays.tick();
+    const ev = w.bus.recent()[w.bus.recent().length - 1];
+    expect(ev.kind).toBe("festival");
+    expect(ev.payload.label).toContain("Long Walk");
+  });
+
+  it("fires The First Sheaf on August 1", () => {
+    vi.setSystemTime(new Date(2025, 7, 1, 12, 0, 0)); // Aug 1
+    const w = new World({ seed: 42 });
+    w.holidays.tick();
+    const ev = w.bus.recent()[w.bus.recent().length - 1];
+    expect(ev.kind).toBe("festival");
+    expect(ev.payload.label).toContain("First Sheaf");
+  });
+
+  it("fires The Greening on April 5", () => {
+    vi.setSystemTime(new Date(2025, 3, 5, 12, 0, 0)); // April 5
+    const w = new World({ seed: 42 });
+    w.holidays.tick();
+    const ev = w.bus.recent()[w.bus.recent().length - 1];
+    expect(ev.kind).toBe("festival");
+    expect(ev.payload.label).toContain("Greening");
+  });
 });
