@@ -2,7 +2,7 @@
 
 A 16-bit ambient fantasy kingdom that lives on the desktop. Runs autonomously; reacts to real-world signals (git, system, Twitch) as flavor.
 
-> Status at last full pass: **363 tests passing across 29 files · TypeScript strict · production build ~2.7s.** Live demo at https://jonathanabarnett.github.io/kingdomos/ — auto-deployed on every push to `main` via `.github/workflows/pages.yml`.
+> Status at last full pass: **376 tests passing across 29 files · TypeScript strict · production build ~2.7s.** Live demo at https://jonathanabarnett.github.io/kingdomos/ — auto-deployed on every push to `main` via `.github/workflows/pages.yml`.
 
 ## TL;DR
 
@@ -10,7 +10,7 @@ A 16-bit ambient fantasy kingdom that lives on the desktop. Runs autonomously; r
 npm install           # one-time
 npm run dev           # Vite-only frontend (works in browser; Tauri APIs stub)
 npm run tauri:dev     # Full desktop app (needs Rust + MSVC)
-npm test              # Vitest suite (363 tests across 29 files)
+npm test              # Vitest suite (376 tests across 29 files)
 npm run typecheck     # tsc -b strict
 npm run build         # Production bundle → dist/
 npm run release       # Tag + push → CI publishes to itch.io
@@ -85,6 +85,7 @@ src/
 │       ├── History.ts        # per-day snapshots for the stats sparklines (90-day ring)
 │       ├── Threats.ts        # rare monster siege → decision; captain seat reduces chance
 │       ├── Discoveries.ts    # spontaneous map landmarks (standing_stones, ruin, camp, …)
+│       ├── Edicts.ts         # 4 player-issued 7-day royal decrees with real effects (stackable with court seats)
 │       └── Achievements.ts   # 27 milestone badges (17 visible + 10 hidden mysteries)
 ├── engine/                   # PIXI RENDERING — reads sim, never writes
 │   ├── PixiApp.ts            # bootstraps Pixi v8, runs sim/render ticks
@@ -298,6 +299,7 @@ Mouse: click NPC → camera follows; click structure → inspector → "Step ins
 | Photo-mode frames | 5 (wood, parchment, stone, window, naked) |
 | Audio | procedural drone pad (toggleable) + sparse melody layer (toggleable) + 9 event SFX + 5 category chimes |
 | Threat flavors | 7 (wolves, bandits, beast, raiders, haunting, smugglers, wraith), each with 3 opening lines = 21 unique openings — captain seat reduces chance 60% |
+| Royal Edicts | 4 (Hospitality, Letters, Thrift, Open Court). 7-day duration; one active at a time. Effects stack with court seats (Letters + Scholar = 2.25× tome rate). |
 | Discovered landmarks | 5 kinds (standing stones, ruin, camp, wellspring, obelisk) × 3 opening sentences = 15 flavor variants |
 | Stats history retained | 90 in-world days (population, gold, vault, tomes as sparklines) |
 | Interior layouts | 13 (one per structure kind: castle, cottage/town, library, forge, mine, watchtower, mill, shrine + 5 landmarks) |
@@ -359,7 +361,7 @@ npm run test:watch  # watch mode
 npm run typecheck   # tsc -b strict
 ```
 
-363 tests across 29 files. New systems should have at least 4–6 tests covering:
+376 tests across 29 files. New systems should have at least 4–6 tests covering:
 - Happy path
 - Adversarial / oversized / NaN input
 - Round-trip save/load (if persisted)

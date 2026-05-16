@@ -140,7 +140,8 @@ export class Threats {
 
     // Decision
     const expiresAt = Date.now() +
-      (this.world.courtEffects.advisorSeated ? 180_000 : 90_000);
+      (this.world.courtEffects.advisorSeated ? 180_000 : 90_000) +
+      (this.world.edictEffects.openCourt ? 60_000 : 0);
     const flavorKind = flavor.kind;
     const rand = this.rand;
     this.world.decisions.propose({

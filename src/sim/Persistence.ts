@@ -77,6 +77,14 @@ export interface SaveData {
     active: string[];
     completed: Record<string, string>;
   };
+  /**
+   * Active Royal Edict + its expiry day. Optional; absent when no edict is
+   * proclaimed. Hydrated by Edicts.hydrate() which validates the id.
+   */
+  edicts?: {
+    activeId: string | null;
+    endsOnDay: number;
+  };
   /** Per-day stats snapshots for the sparklines panel. Oldest first. */
   history?: Array<{
     day: number;
@@ -215,6 +223,7 @@ export function serialize(
     },
     history: world.history.snapshots,
     landmarks: world.discoveries.snapshot(),
+    edicts: world.edicts.snapshot(),
   };
 }
 
@@ -421,7 +430,19 @@ export function validateSave(rawInput: unknown): SaveData | null {
     aspirations: validateAspirations(raw.aspirations),
     history: validateHistory(raw.history),
     landmarks: validateLandmarks(raw.landmarks),
+    edicts: validateEdicts(raw.edicts),
   };
+}
+
+const VALID_EDICT_IDS = new Set(["hospitality", "studious", "frugal", "open_court"]);
+
+function validateEdicts(raw: unknown): SaveData["edicts"] {
+  if (!isPlainObject(raw)) return undefined;
+  const rawId = raw.activeId;
+  const activeId =
+    typeof rawId === "string" && VALID_EDICT_IDS.has(rawId) ? rawId : null;
+  const endsOnDay = safeInt(raw.endsOnDay, 0, 0, 1_000_000);
+  return { activeId, endsOnDay };
 }
 
 const VALID_LANDMARK_KINDS = new Set([
@@ -673,6 +694,18 @@ export function applySave(world: World, save: SaveData): void {
   // Restore the per-day history sparkline buffer.
   if (save.history) {
     world.history.hydrate(save.history);
+  }
+  // Restore the active Royal Edict (if any). Edicts.hydrate validates the
+  // id against EDICT_DEFS internally, so we can hand it the raw shape; any
+  // unknown id (renamed/removed in a future version) silently clears.
+  if (save.edicts) {
+    const allowed = ["hospitality", "studious", "frugal", "open_court"] as const;
+    type EdictId = (typeof allowed)[number];
+    const id = save.edicts.activeId;
+    const safeId: EdictId | null = id && (allowed as readonly string[]).includes(id)
+      ? (id as EdictId)
+      : null;
+    world.edicts.hydrate({ activeId: safeId, endsOnDay: save.edicts.endsOnDay });
   }
   // Re-place narrative-discovered landmarks. The map itself regenerates
   // from seed each load so the procgen structures come back automatically,

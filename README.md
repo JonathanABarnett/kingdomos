@@ -2,7 +2,7 @@
 
 > A 16-bit fantasy kingdom that lives on your desktop. It runs on its own, reacts to what you're already doing, and tells you stories about a place that's now yours.
 
-[![Tests](https://img.shields.io/badge/tests-363%20passing-brightgreen)](./src) [![TypeScript](https://img.shields.io/badge/typescript-strict-blue)]() [![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%202-orange)]()
+[![Tests](https://img.shields.io/badge/tests-376%20passing-brightgreen)](./src) [![TypeScript](https://img.shields.io/badge/typescript-strict-blue)]() [![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%202-orange)]()
 
 **Play it now:** https://jonathanabarnett.github.io/kingdomos/ — no install required.
 
@@ -90,6 +90,7 @@ git push --follow-tags    # release.yml does the deploy
 - **10 interactive decision archetypes** — petitions, merchant offers, festival approvals, suspicious strangers, tax levies, pilgrim escorts, boundary disputes, astronomer's portents, a stray dog at the kitchens, anonymous gifts at the keep door
 - **21 soft aspirations** — three player-facing goals at a time, rotating from a pool ("reach 25 villagers", "see 5 different monarchs", "collect 10 artifacts", "discover three wonders", "an elder of seventy", "a realm of many trades"). Ignore them if you want; check them off if that's your style
 - **Court roles affect the world** — appoint a Royal Advisor (extends decision timers), Captain of the Guard (storms pass less often, threats less likely), or Court Scholar (50% faster tome production). Seats auto-vacate if the appointee dies, and the seated court speaks in the journal occasionally
+- **Royal Edicts** — issue one of four 7-day decrees (Hospitality / Letters / Thrift / Open Court). Each is a deliberate short-term commitment with real mechanical bite — the Edict of Letters stacks with the Court Scholar for 2.25× tome production. One active at a time; auto-expires
 - **Rare threats with stakes** — 7 flavors (wolves, bandits, beast, raiders, haunting, smugglers, wraith), each with 3 opening lines so repeat encounters never read the same. Decide whether to send the guard (costs gold, may yield treasure), rouse the militia (free, costs no one's sleep), or let it pass (40% chance it worsens). Captain seated cuts threat chance by 60%.
 - **90-day history sparklines** — population, gold, vault count, and tomes are tracked per in-world day and rendered as tiny SVG line charts in the Stats panel. Watch your kingdom's arc.
 - **Kingdom Vault** — when you found a new kingdom, the previous one isn't lost: its name, last monarch, founding date, generations, final census, and the last 12 milestone journal entries are preserved in a read-only archive (up to 20 kingdoms kept). Browse them from the title screen. *Past kingdoms aren't resumable — they're artifacts, like photos in an album.*
@@ -180,7 +181,7 @@ npm run test:watch  # watch mode
 npm run typecheck   # tsc -b strict
 ```
 
-**363 tests across 31 files.** TypeScript strict mode. Hardened against:
+**376 tests across 32 files.** TypeScript strict mode. Hardened against:
 
 - Twitch raid floods (NPC + effect runtime caps)
 - Tampered save files (clamps NaN, drops unknown roles, caps roster, validates parent ids)

@@ -697,7 +697,8 @@ export class Quests {
     // Royal Advisor seat extends the decision window so the player has more
     // time before auto-expiry. 90s base, 180s with advisor.
     const expiresAt = Date.now() +
-      (this.world.courtEffects.advisorSeated ? 180_000 : 90_000);
+      (this.world.courtEffects.advisorSeated ? 180_000 : 90_000) +
+      (this.world.edictEffects.openCourt ? 60_000 : 0);
     const roll = rand();
     const decId = this.nextId("dec");
     // ~10 decision archetypes share the [0, 1) space.

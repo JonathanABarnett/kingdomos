@@ -22,6 +22,13 @@ export class NarrativeDirector {
   /** seconds since the last externally-sourced event */
   private quietSeconds = 0;
 
+  /**
+   * Edict of Hospitality in force — when true, the cadence between fires
+   * tightens (30-60s instead of 45-90s) so the kingdom visibly feels busier
+   * during the decree. Set by the Edicts system on its tick.
+   */
+  hospitalityBonus = false;
+
   constructor(
     private bus: EventBus,
     private map: OverworldMap,
@@ -38,7 +45,11 @@ export class NarrativeDirector {
     this.quietSeconds += dt;
     this.nextFireIn -= dt;
     if (this.nextFireIn > 0) return;
-    this.nextFireIn = 45 + this.rand() * 45;
+    // Hospitality Edict tightens the cadence so the kingdom feels busier
+    // during the decree (30-60s vs the default 45-90s).
+    const base = this.hospitalityBonus ? 30 : 45;
+    const jitter = this.hospitalityBonus ? 30 : 45;
+    this.nextFireIn = base + this.rand() * jitter;
 
     // when world has been quiet, fire something flavorful
     if (this.quietSeconds > 20) {

@@ -22,18 +22,33 @@ export class Economy {
    */
   scholarBonus = false;
 
+  /**
+   * Studious Edict in force — extra +50% tome production, stackable with
+   * the Court Scholar bonus (so both active = 2.25× base rate). Set by the
+   * Edicts system on its tick.
+   */
+  edictStudious = false;
+
+  /**
+   * Frugal Edict in force — gold per ironwork transaction is +25%. Stackable
+   * with everything else; this is a multiplier on the gold output line only.
+   */
+  edictFrugal = false;
+
   /** dt in sim seconds */
   tick(dt: number, miners: number, smiths: number, scholars: number) {
     // miners produce ore, smiths consume ore to make ironwork (+ gold), scholars produce tomes
     const oreRate = 0.08 * miners;
     const smithRate = Math.min(0.05 * smiths, this.state.ore * 0.5);
-    const scholarRate = 0.02 * scholars * (this.scholarBonus ? 1.5 : 1);
+    const scholarMul = (this.scholarBonus ? 1.5 : 1) * (this.edictStudious ? 1.5 : 1);
+    const scholarRate = 0.02 * scholars * scholarMul;
+    const goldMul = this.edictFrugal ? 1.25 : 1;
 
     this.state.ore += oreRate * dt;
     this.state.ore -= smithRate * dt;
     this.state.ironwork += smithRate * dt;
     this.state.tomes += scholarRate * dt;
-    this.state.gold += smithRate * dt * 2;
+    this.state.gold += smithRate * dt * 2 * goldMul;
 
     // soft caps so numbers stay bounded
     this.state.ore = Math.min(this.state.ore, 999);

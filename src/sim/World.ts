@@ -31,6 +31,7 @@ import { Aspirations } from "./systems/Aspirations";
 import { History } from "./systems/History";
 import { Threats } from "./systems/Threats";
 import { Discoveries } from "./systems/Discoveries";
+import { Edicts } from "./systems/Edicts";
 import type { SavedJournalEntry } from "./Persistence";
 import { EventBus } from "./events/EventBus";
 import type { ExternalEvent } from "./events/EventSchema";
@@ -188,6 +189,7 @@ export class World {
   readonly history: History;
   readonly threats: Threats;
   readonly discoveries: Discoveries;
+  readonly edicts: Edicts;
   /** Callbacks invoked when the Journal writes a new entry. */
   onJournal?: (entry: SavedJournalEntry) => void;
 
@@ -208,6 +210,18 @@ export class World {
     advisorSeated: false,
     captainSeated: false,
     scholarSeated: false,
+  };
+
+  /**
+   * Active-Royal-Edict effect mirror. Set by the Edicts system on proclaim/
+   * expire. Consumers (NarrativeDirector, Decisions, Threats) read these the
+   * same way they read courtEffects.
+   */
+  readonly edictEffects = {
+    hospitality: false,
+    studious: false,
+    frugal: false,
+    openCourt: false,
   };
 
   /**
@@ -255,6 +269,7 @@ export class World {
     this.history = new History();
     this.threats = new Threats(this, this.journal, this.rand);
     this.discoveries = new Discoveries(this, this.journal, this.rand);
+    this.edicts = new Edicts(this, this.journal);
     const cal = this.calendar.snapshot();
     this.state = {
       time: 0,
@@ -308,6 +323,8 @@ export class World {
       // Even rarer "a landmark has been discovered" roll. Adds a structure
       // to the map; the BorderLayer picks it up automatically.
       this.discoveries.tick();
+      // Royal Edicts: auto-expire active edicts when their window elapses.
+      this.edicts.tick();
       // Aspirations: check progress, fire journal on completion.
       const completed = this.aspirations.evaluate(this);
       for (const id of completed) {
