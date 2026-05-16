@@ -2,7 +2,7 @@
 
 A 16-bit ambient fantasy kingdom that lives on the desktop. Runs autonomously; reacts to real-world signals (git, system, Twitch) as flavor.
 
-> Status at last full pass: **343 tests passing across 29 files · TypeScript strict · production build ~2.7s.** Live demo at https://jonathanabarnett.github.io/kingdomos/ — auto-deployed on every push to `main` via `.github/workflows/pages.yml`.
+> Status at last full pass: **363 tests passing across 29 files · TypeScript strict · production build ~2.7s.** Live demo at https://jonathanabarnett.github.io/kingdomos/ — auto-deployed on every push to `main` via `.github/workflows/pages.yml`.
 
 ## TL;DR
 
@@ -10,7 +10,7 @@ A 16-bit ambient fantasy kingdom that lives on the desktop. Runs autonomously; r
 npm install           # one-time
 npm run dev           # Vite-only frontend (works in browser; Tauri APIs stub)
 npm run tauri:dev     # Full desktop app (needs Rust + MSVC)
-npm test              # Vitest suite (343 tests across 29 files)
+npm test              # Vitest suite (363 tests across 29 files)
 npm run typecheck     # tsc -b strict
 npm run build         # Production bundle → dist/
 npm run release       # Tag + push → CI publishes to itch.io
@@ -291,7 +291,7 @@ Mouse: click NPC → camera follows; click structure → inspector → "Step ins
 | Holidays | 14 (New Year, Lovers' Festival, Equinox, The Greening, Bloomfest, Midsummer, The Long Walk, The First Sheaf, Harvest Moon, Hallowtide, Remembrance, Solstice, Yuletide, Year's End) |
 | Seasonal journal anchors | 16 (4 per season, picked via seeded RNG so a save's anchors round-trip identically) |
 | Kingdom anniversaries | rotating pool of 10 flavor lines, fires once per year roll after Y1 (10-year no-repeat cycle) |
-| NPC personality traits | 8 (joyful, grim, curious, stoic, kind, ambitious, anxious, wise) |
+| NPC personality traits | 8 (joyful, grim, curious, stoic, kind, ambitious, anxious, wise), each with 3 epithet variants (24 total). `epithetFor(trait, seed)` picks one deterministically per NPC. |
 | First-name pool | 64 |
 | Surname-part pools | 20 left × 20 right |
 | Onboarding suggestions | 24 kingdom + 24 monarch + 20 pet names |
@@ -359,7 +359,7 @@ npm run test:watch  # watch mode
 npm run typecheck   # tsc -b strict
 ```
 
-343 tests across 29 files. New systems should have at least 4–6 tests covering:
+363 tests across 29 files. New systems should have at least 4–6 tests covering:
 - Happy path
 - Adversarial / oversized / NaN input
 - Round-trip save/load (if persisted)

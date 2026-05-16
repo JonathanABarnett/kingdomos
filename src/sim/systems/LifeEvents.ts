@@ -2,7 +2,7 @@ import type { World } from "../World";
 import type { Journal } from "./Journal";
 import type { NPC } from "../types";
 import { generateName } from "./Names";
-import { traitFor, TRAIT_EPITHET } from "./Traits";
+import { traitFor, epithetFor } from "./Traits";
 
 /**
  * NPC life events: aging, marriages, births, deaths.
@@ -212,9 +212,14 @@ function pickFrom<T>(arr: readonly T[], rand: () => number): T {
   return arr[Math.floor(rand() * arr.length)];
 }
 
-/** Returns "the ever-cheerful Berta" if the NPC has a trait, else just "Berta". */
+/**
+ * Returns "the ever-cheerful Berta" if the NPC has a trait, else just
+ * "Berta". The epithet is picked deterministically via `epithetFor(trait,
+ * seed)` so the same villager always reads with the same descriptor across
+ * save/load.
+ */
 function describe(npc: NPC): string {
-  if (npc.trait) return `the ${TRAIT_EPITHET[npc.trait]} ${npc.name}`;
+  if (npc.trait) return `the ${epithetFor(npc.trait, npc.seed)} ${npc.name}`;
   return npc.name ?? "someone";
 }
 
