@@ -442,4 +442,71 @@ describe("World — kingdom anniversary", () => {
     );
     expect(fest).toBeDefined();
   });
+
+  it("anniversary lines cycle through the expanded 10-line pool over a decade", () => {
+    // Across 10 anniversaries, every line in the pool should surface at
+    // least once (the mod-cycle is deterministic by year, not by seed).
+    const w = new World({ seed: 42 });
+    const lines: string[] = [];
+    w.onJournal = (e) => {
+      if (e.kind === "milestone" && e.text.includes("anniversary of the kingdom")) {
+        lines.push(e.text);
+      }
+    };
+    const cal0 = w.calendar.snapshot();
+    let fakeYear = cal0.year;
+    (w.calendar as unknown as { snapshot(): typeof cal0 }).snapshot = () => ({
+      ...cal0,
+      year: fakeYear,
+    });
+    // Year 2 = 1st anniversary, ... Year 11 = 10th.
+    for (let y = 2; y <= 11; y++) {
+      fakeYear = y;
+      w.tick(0.1);
+    }
+    expect(lines.length).toBe(10);
+    // 10 anniversaries should mod-cycle through 10 distinct flavor lines.
+    const flavors = lines.map((l) => l.split(" — ").slice(1).join(" — "));
+    expect(new Set(flavors).size).toBe(10);
+  });
+});
+
+describe("World — season anchors", () => {
+  it("season turn writes a 'weather' kind entry from the season's pool", () => {
+    const w = new World({ seed: 42 });
+    const entries: string[] = [];
+    w.onJournal = (e) => {
+      if (e.kind === "weather") entries.push(e.text);
+    };
+    // Force a season change to "winter" with day > 1.
+    const cal = w.calendar.snapshot();
+    (w.calendar as unknown as { snapshot(): typeof cal }).snapshot = () => ({
+      ...cal,
+      season: cal.season === "winter" ? "spring" : "winter",
+      day: cal.day + 1,
+    });
+    w.tick(0.1);
+    expect(entries.length).toBe(1);
+    expect(entries[0].length).toBeGreaterThan(30);
+  });
+
+  it("season anchor pick is deterministic per (seed, season turn)", () => {
+    const runOne = () => {
+      const w = new World({ seed: 1234 });
+      const cal0 = w.calendar.snapshot();
+      // Force a winter turn.
+      (w.calendar as unknown as { snapshot(): typeof cal0 }).snapshot = () => ({
+        ...cal0,
+        season: cal0.season === "winter" ? "spring" : "winter",
+        day: cal0.day + 1,
+      });
+      let result = "";
+      w.onJournal = (e) => {
+        if (e.kind === "weather") result = e.text;
+      };
+      w.tick(0.1);
+      return result;
+    };
+    expect(runOne()).toBe(runOne());
+  });
 });

@@ -120,18 +120,46 @@ const ANNIVERSARY_LINES: readonly string[] = [
   "an old veteran stood by the gate at sunrise and would not say why. Some things, the kingdom remembers without needing words.",
   "the chronicler closed one volume and opened another. The new one began with the date in red ink.",
   "the pet sat where it always sits. The kingdom did the same.",
+  "the gardens of the keep flowered out of season, which the gardeners pretended to be cross about.",
+  "lanterns hung from every shutter in every town, lit at the same hour by tradition no one remembers starting.",
+  "the smith forged a small token — one for each new child born in the year — and left them on a window-sill of the castle.",
+  "an old song was sung at the keep that had been written before any of the singers were born.",
+  "the youngest child of the realm walked the wall and was given a coin and a piece of new bread.",
 ];
 
-/** Journal anchor text fired once when the season rolls over (not on day 1). */
-const SEASON_ANCHORS: Record<"spring" | "summer" | "autumn" | "winter", string> = {
-  spring:
+/**
+ * Journal anchor pools fired once when the season rolls over (not on day 1).
+ * Multiple lines per season; one is picked via the world's seeded RNG, so a
+ * given seed + season turn produces the same anchor reproducibly.
+ */
+const SEASON_ANCHORS: Record<
+  "spring" | "summer" | "autumn" | "winter",
+  readonly string[]
+> = {
+  spring: [
     "Spring came on quietly today — the first green broke through the frost, and the children chased it across the meadows.",
-  summer:
+    "Spring arrived with a long warm rain. The mud was terrible and no one minded.",
+    "The thaw came overnight. By morning every roof in the kingdom was dripping in time with every other.",
+    "Buds opened on the keep's old apple tree, two days earlier than the chronicle's average.",
+  ],
+  summer: [
     "Summer settled over the kingdom. The fields turned gold, and the masons worked stripped to the waist.",
-  autumn:
+    "The first true summer day — bright, still, and too hot to argue. The court was adjourned by mutual consent.",
+    "Summer arrived with a thunderstorm at noon that lasted exactly one hour and then was gone.",
+    "Cicadas began in the south woods at midday and did not stop. The kingdom learned to talk over them.",
+  ],
+  autumn: [
     "Autumn arrived with a colder wind. The leaves began to turn, and the harvest carts rolled at first light.",
-  winter:
+    "The first frost coated the higher fields overnight. Children walked the rows to look, and broke none of it.",
+    "Autumn brought a sky the color of slate and a wind from the north. The lanterns on the keep wall were lit at noon.",
+    "Apples thumped into the orchard's nets all afternoon. The miller declared the year an honest one.",
+  ],
+  winter: [
     "Winter took the kingdom in the night. Hearths burned through every house, and the watch sang to keep warm.",
+    "First snow fell at dusk and was still falling at dawn. The whole kingdom went quiet.",
+    "Winter arrived without ceremony — only a thin ice on every well and the smell of wood smoke through every street.",
+    "The cold came on hard. The forge ran late, the library ran later, and the rest of the kingdom slept early.",
+  ],
 };
 
 export class World {
@@ -291,8 +319,12 @@ export class World {
     }
     if (seasonChanged && this.state.day > 1) {
       // Anchor the season turn with a journal entry. Skipped on day 1 to
-      // avoid a redundant "spring began" on a fresh kingdom.
-      this.journal.write(SEASON_ANCHORS[cal.season], "weather");
+      // avoid a redundant "spring began" on a fresh kingdom. Multiple
+      // variants per season — seeded RNG picks one so a given seed +
+      // season turn is reproducible (good for replay / save-load parity).
+      const pool = SEASON_ANCHORS[cal.season];
+      const line = pool[Math.floor(this.rand() * pool.length)];
+      this.journal.write(line, "weather");
     }
     if (yearChanged && cal.year > 1) {
       // Kingdom Anniversary — once per year roll, write a milestone entry
