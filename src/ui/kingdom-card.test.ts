@@ -266,4 +266,65 @@ describe("drawKingdomCard (smoke)", () => {
       });
     }).not.toThrow();
   });
+
+  it("draws a portrait inset and caption when sprites are passed", () => {
+    const ctx = makeMockCtx();
+    // Pass any truthy value as the sprite — the renderer only uses it via
+    // ctx.drawImage, which our mock just records.
+    const fakeSprite = {} as CanvasImageSource;
+    drawKingdomCard(
+      ctx,
+      {
+        kingdomName: "Aurelia",
+        monarchName: "Elara",
+        petName: "Biscuit",
+        bannerColor: "#b45309",
+        day: 47,
+        year: 2,
+        generation: 1,
+        milestones: ["a wedding"],
+      },
+      { monarchSprite: fakeSprite, petSprite: fakeSprite },
+    );
+    const drawImageCalls = ctx.calls.filter((c) => c.method === "drawImage");
+    // Two drawImage calls — one monarch, one pet.
+    expect(drawImageCalls.length).toBe(2);
+    const filled = ctx.calls.filter((c) => c.method === "fillText").map((c) => String(c.args[0]));
+    // The reign caption shows monarch & pet name together.
+    expect(filled.some((t) => t.includes("Elara & Biscuit"))).toBe(true);
+  });
+
+  it("portrait caption falls back to '<monarch>, sovereign' when no pet is set", () => {
+    const ctx = makeMockCtx();
+    const fakeSprite = {} as CanvasImageSource;
+    drawKingdomCard(
+      ctx,
+      {
+        kingdomName: "K",
+        monarchName: "Elara",
+        bannerColor: "#b45309",
+        day: 1,
+        year: 1,
+        generation: 1,
+        milestones: [],
+      },
+      { monarchSprite: fakeSprite },
+    );
+    const filled = ctx.calls.filter((c) => c.method === "fillText").map((c) => String(c.args[0]));
+    expect(filled.some((t) => t === "Elara, sovereign")).toBe(true);
+  });
+
+  it("portrait inset is skipped entirely when no sprites are provided", () => {
+    const ctx = makeMockCtx();
+    drawKingdomCard(ctx, {
+      kingdomName: "K",
+      monarchName: "M",
+      bannerColor: "#b45309",
+      day: 1,
+      year: 1,
+      generation: 1,
+      milestones: ["x"],
+    });
+    expect(ctx.calls.filter((c) => c.method === "drawImage").length).toBe(0);
+  });
 });

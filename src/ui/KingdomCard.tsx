@@ -8,6 +8,36 @@ import {
   CARD_HEIGHT,
 } from "./kingdom-card-data";
 import { drawKingdomCard } from "./kingdom-card-renderer";
+import { CanvasSurface, drawCharacter } from "../engine/CharacterRenderer";
+import { drawPet } from "../engine/PetSpec";
+import type { CharacterSpec } from "../engine/CharacterSpec";
+import type { PetSpec } from "../engine/PetSpec";
+
+/**
+ * Render a monarch or pet spec to an offscreen 32×32 canvas, suitable for
+ * passing to the card renderer's `drawImage` calls.
+ */
+function spriteCanvas(
+  draw: (surface: CanvasSurface, frame: number) => void,
+): HTMLCanvasElement {
+  const c = document.createElement("canvas");
+  c.width = 32;
+  c.height = 32;
+  const ctx = c.getContext("2d");
+  if (ctx) {
+    ctx.imageSmoothingEnabled = false;
+    draw(new CanvasSurface(ctx), 0);
+  }
+  return c;
+}
+
+function monarchSpriteCanvas(spec: CharacterSpec): HTMLCanvasElement {
+  return spriteCanvas((surface, frame) => drawCharacter(surface, spec, frame));
+}
+
+function petSpriteCanvas(spec: PetSpec): HTMLCanvasElement {
+  return spriteCanvas((surface, frame) => drawPet(surface, spec, frame));
+}
 
 /**
  * The Kingdom Card modal.
@@ -33,6 +63,8 @@ export function KingdomCard({
 }) {
   const identity = useGameStore((s) => s.identity);
   const journal = useGameStore((s) => s.journal);
+  const monarchSpec = useGameStore((s) => s.monarchSpec);
+  const petSpec = useGameStore((s) => s.petSpec);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [dataUrl, setDataUrl] = useState<string | null>(null);
 
@@ -55,12 +87,20 @@ export function KingdomCard({
         generation: world.succession.state.generation,
         journal,
       });
-      drawKingdomCard(ctx, input);
+      // Render the monarch + pet to small offscreen canvases at native 32×32
+      // resolution. The card renderer scales them up with smoothing off so
+      // they read as crisp pixel art rather than blurred photo stand-ins.
+      const monarchImg = monarchSpriteCanvas(monarchSpec);
+      const petImg = petSpec ? petSpriteCanvas(petSpec) : undefined;
+      drawKingdomCard(ctx, input, {
+        monarchSprite: monarchImg,
+        petSprite: petImg,
+      });
       setDataUrl(canvas.toDataURL("image/png"));
     } catch (err) {
       console.warn("[KingdomCard] render failed", err);
     }
-  }, [open, world, identity, journal]);
+  }, [open, world, identity, journal, monarchSpec, petSpec]);
 
   // Esc-to-close
   useEffect(() => {

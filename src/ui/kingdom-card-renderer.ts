@@ -18,6 +18,14 @@ export type CardTemplate = "parchment";
 
 export interface RenderOpts {
   template?: CardTemplate;
+  /**
+   * 32×32 source canvas/image of the monarch sprite (drawn via the engine's
+   * CharacterRenderer). Renderer will up-scale and place on the card. Pass
+   * `undefined` (e.g. in tests) to skip the portrait inset.
+   */
+  monarchSprite?: CanvasImageSource;
+  /** 32×32 pet sprite, same contract as `monarchSprite`. */
+  petSprite?: CanvasImageSource;
 }
 
 /**
@@ -38,6 +46,63 @@ export function drawKingdomCard(
       drawParchmentTemplate(ctx, input);
       break;
   }
+  // Sprites layer on top — same for every template, anchored bottom-right.
+  if (opts.monarchSprite || opts.petSprite) {
+    drawPortraitInset(ctx, input, opts);
+  }
+}
+
+/**
+ * Bottom-right portrait inset. Shows the monarch (3× scale) with the pet
+ * (2× scale) standing alongside, on a small parchment-tinted mat trimmed
+ * with the kingdom's banner color. The inset's job is to make the card
+ * feel like *your* kingdom rather than a generic export.
+ */
+function drawPortraitInset(
+  ctx: CanvasRenderingContext2D,
+  input: KingdomCardInput,
+  opts: RenderOpts,
+): void {
+  // Inset geometry. 200×130 plate anchored to the bottom-right, leaving room
+  // for the wordmark below it. Within the plate: monarch on the left at 3×
+  // scale (96×96), pet on the right at 2× scale (64×64).
+  const plateW = 200;
+  const plateH = 130;
+  const plateX = CARD_WIDTH - plateW - 80;
+  const plateY = CARD_HEIGHT - plateH - 80;
+
+  // Plate background — slightly darker parchment with the banner-color trim.
+  ctx.fillStyle = "rgba(245, 200, 130, 0.9)";
+  ctx.fillRect(plateX, plateY, plateW, plateH);
+  // Inner highlight rim
+  ctx.fillStyle = "rgba(255, 240, 190, 0.6)";
+  ctx.fillRect(plateX, plateY, plateW, 2);
+  ctx.fillRect(plateX, plateY, 2, plateH);
+  // Banner-color trim (bottom + right) — gives it a coin/medallion feel
+  ctx.fillStyle = safeHex(input.bannerColor, "#b45309");
+  ctx.fillRect(plateX, plateY + plateH - 4, plateW, 4);
+  ctx.fillRect(plateX + plateW - 4, plateY, 4, plateH);
+
+  // Monarch — 3× scale (96×96) on the left of the plate.
+  ctx.imageSmoothingEnabled = false;
+  if (opts.monarchSprite) {
+    ctx.drawImage(opts.monarchSprite, plateX + 12, plateY + 12, 96, 96);
+  }
+  // Pet — 2× scale (64×64) on the right, baseline-aligned with the monarch.
+  if (opts.petSprite) {
+    ctx.drawImage(opts.petSprite, plateX + plateW - 76, plateY + 48, 64, 64);
+  }
+
+  // Small caption below the plate: "long may they reign" — tasteful, optional.
+  ctx.fillStyle = "rgba(80, 40, 15, 0.7)";
+  ctx.font = "italic 16px 'Georgia', 'Times New Roman', serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  const captionY = plateY + plateH + 22;
+  const reignCaption = input.petName
+    ? `${input.monarchName} & ${input.petName}`
+    : `${input.monarchName}, sovereign`;
+  ctx.fillText(reignCaption, plateX + plateW / 2, captionY, plateW);
 }
 
 // ── Templates ──────────────────────────────────────────────────────────
@@ -123,16 +188,18 @@ function drawParchmentTemplate(ctx: CanvasRenderingContext2D, input: KingdomCard
     ctx.fillText(text, milestonesX + 18, y + 1, CARD_WIDTH - milestonesX - 80);
   }
 
-  // Footer line — date stamp on the left, wordmark on the right.
+  // Footer line — date stamp on the left, wordmark beneath the milestones.
+  // The bottom-right is reserved for the portrait inset when sprites are
+  // provided, so we keep both text elements on the left side of the card.
   ctx.font = "20px 'Georgia', 'Times New Roman', serif";
   ctx.fillStyle = "#92400e";
   ctx.textBaseline = "alphabetic";
   ctx.textAlign = "left";
-  ctx.fillText(`Day ${input.day} · Year ${input.year}`, 100, CARD_HEIGHT - 40);
+  ctx.fillText(`Day ${input.day} · Year ${input.year}`, 100, CARD_HEIGHT - 60);
 
-  ctx.textAlign = "right";
-  ctx.font = "bold 18px 'Georgia', 'Times New Roman', serif";
-  ctx.fillText("KingdomOS · jonathanabarnett.github.io/kingdomos", CARD_WIDTH - 100, CARD_HEIGHT - 40);
+  ctx.font = "bold 16px 'Georgia', 'Times New Roman', serif";
+  ctx.fillStyle = "rgba(146, 64, 14, 0.85)";
+  ctx.fillText("KingdomOS · jonathanabarnett.github.io/kingdomos", 100, CARD_HEIGHT - 32);
 
   // Top-right tiny ornament — three dots in the banner color.
   ctx.fillStyle = safeHex(input.bannerColor, "#b45309");
