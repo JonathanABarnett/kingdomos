@@ -11,8 +11,8 @@
  * footer wordmark — the kind of image a player would actually post.
  */
 
-import type { KingdomCardInput } from "./kingdom-card-data";
-import { CARD_WIDTH, CARD_HEIGHT, trimMilestoneLine } from "./kingdom-card-data";
+import type { KingdomCardInput, KingdomCardStats } from "./kingdom-card-data";
+import { CARD_WIDTH, CARD_HEIGHT, trimMilestoneLine, compactNumber, pickSparklineSeries } from "./kingdom-card-data";
 
 export type CardTemplate = "parchment";
 
@@ -53,6 +53,131 @@ export function drawKingdomCard(
 }
 
 /**
+ * Stats badge row. Centered under the divider, four pills max:
+ *   👥 24 villagers   ⛁ 412 gold   ✦ 7 vault   ★ 14/27 achievements
+ *
+ * Each pill is only drawn when the underlying number is meaningful (>0 or
+ * >=1 in the case of achievement totals). The row stays compact even when
+ * a brand-new kingdom only has a population badge to show.
+ */
+function drawStatsRow(ctx: CanvasRenderingContext2D, stats: KingdomCardStats): void {
+  const badges: Array<{ label: string; value: string }> = [];
+  if (stats.population !== undefined && stats.population > 0) {
+    badges.push({
+      label: stats.population === 1 ? "villager" : "villagers",
+      value: compactNumber(stats.population),
+    });
+  }
+  if (stats.gold !== undefined && stats.gold > 0) {
+    badges.push({ label: "gold", value: compactNumber(stats.gold) });
+  }
+  if (stats.vault !== undefined && stats.vault > 0) {
+    badges.push({
+      label: stats.vault === 1 ? "vault piece" : "vault pieces",
+      value: compactNumber(stats.vault),
+    });
+  }
+  if (
+    stats.achievementsUnlocked !== undefined &&
+    stats.achievementsUnlocked > 0 &&
+    stats.achievementsTotal !== undefined &&
+    stats.achievementsTotal > 0
+  ) {
+    badges.push({
+      label: "achievements",
+      value: `${stats.achievementsUnlocked}/${stats.achievementsTotal}`,
+    });
+  }
+  if (!badges.length) return;
+
+  ctx.font = "bold 22px 'Georgia', 'Times New Roman', serif";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  const sep = "   ·   ";
+  const text = badges.map((b) => `${b.value} ${b.label}`).join(sep);
+  // Center the whole row.
+  const metrics = ctx.measureText(text);
+  const totalW = (metrics && typeof metrics.width === "number" && metrics.width)
+    ? metrics.width
+    // Fallback measurement (mocks may not provide a real measureText).
+    : text.length * 11;
+  let x = (CARD_WIDTH - totalW) / 2;
+  const y = 290;
+
+  for (let i = 0; i < badges.length; i++) {
+    const b = badges[i];
+    // Value: darker sepia, bold
+    ctx.fillStyle = "#5b2a08";
+    const v = b.value;
+    ctx.fillText(v, x, y);
+    const vw = (ctx.measureText(v).width as number) || v.length * 13;
+    x += vw + 6;
+    // Label: lighter sepia, smaller
+    ctx.font = "20px 'Georgia', 'Times New Roman', serif";
+    ctx.fillStyle = "rgba(120, 53, 15, 0.85)";
+    ctx.fillText(b.label, x, y);
+    const lw = (ctx.measureText(b.label).width as number) || b.label.length * 10;
+    x += lw;
+    // Separator (skip after the last)
+    if (i < badges.length - 1) {
+      ctx.fillStyle = "rgba(146, 64, 14, 0.55)";
+      ctx.fillText(sep, x, y);
+      const sw = (ctx.measureText(sep).width as number) || sep.length * 10;
+      x += sw;
+    }
+    ctx.font = "bold 22px 'Georgia', 'Times New Roman', serif";
+  }
+}
+
+/**
+ * Draw a tiny sparkline inside a rectangular box. Renders a polyline + a
+ * subtle filled-area underneath. Used for the population chart on the
+ * portrait inset.
+ */
+function drawSparkline(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  series: readonly number[],
+  stroke: string,
+  fill: string,
+): void {
+  if (series.length < 2) return;
+  let min = Infinity;
+  let max = -Infinity;
+  for (const v of series) {
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+  if (max === min) max = min + 1;
+  const points: Array<[number, number]> = series.map((v, i) => {
+    const px = x + (i / (series.length - 1)) * w;
+    const py = y + h - ((v - min) / (max - min)) * h;
+    return [px, py];
+  });
+  // Filled area under the line
+  ctx.fillStyle = fill;
+  ctx.beginPath();
+  ctx.moveTo(points[0][0], y + h);
+  for (const [px, py] of points) ctx.lineTo(px, py);
+  ctx.lineTo(points[points.length - 1][0], y + h);
+  ctx.closePath();
+  ctx.fill();
+  // Line on top
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i < points.length; i++) {
+    const [px, py] = points[i];
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+}
+
+/**
  * Bottom-right portrait inset. Shows the monarch (3× scale) with the pet
  * (2× scale) standing alongside, on a small parchment-tinted mat trimmed
  * with the kingdom's banner color. The inset's job is to make the card
@@ -83,14 +208,31 @@ function drawPortraitInset(
   ctx.fillRect(plateX, plateY + plateH - 4, plateW, 4);
   ctx.fillRect(plateX + plateW - 4, plateY, 4, plateH);
 
+  // Population sparkline — slim chart along the very top of the plate when
+  // we have history. Gives the inset a "this kingdom has a story" feel even
+  // before the player reads the milestones.
+  const series = pickSparklineSeries(input.stats?.populationSeries ?? [], 60);
+  if (series.length >= 2) {
+    drawSparkline(
+      ctx,
+      plateX + 12,
+      plateY + 4,
+      plateW - 28,
+      6,
+      series,
+      safeHex(input.bannerColor, "#b45309"),
+      "rgba(180, 83, 9, 0.18)",
+    );
+  }
+
   // Monarch — 3× scale (96×96) on the left of the plate.
   ctx.imageSmoothingEnabled = false;
   if (opts.monarchSprite) {
-    ctx.drawImage(opts.monarchSprite, plateX + 12, plateY + 12, 96, 96);
+    ctx.drawImage(opts.monarchSprite, plateX + 12, plateY + 18, 96, 96);
   }
   // Pet — 2× scale (64×64) on the right, baseline-aligned with the monarch.
   if (opts.petSprite) {
-    ctx.drawImage(opts.petSprite, plateX + plateW - 76, plateY + 48, 64, 64);
+    ctx.drawImage(opts.petSprite, plateX + plateW - 76, plateY + 54, 64, 64);
   }
 
   // Small caption below the plate: "long may they reign" — tasteful, optional.
@@ -165,12 +307,20 @@ function drawParchmentTemplate(ctx: CanvasRenderingContext2D, input: KingdomCard
   ctx.fillStyle = "rgba(120, 53, 15, 0.5)";
   ctx.fillRect(CARD_WIDTH / 2 - 80, 255, 160, 2);
 
+  // Stats badge row — only drawn when stats are present. Keeps the visual
+  // weight balanced even when a player has only one or two badge-worthy
+  // numbers (we render exactly the badges that have meaningful values).
+  if (input.stats) {
+    drawStatsRow(ctx, input.stats);
+  }
+
   // Milestones block — chronicle-style, left-aligned, with bullet dots.
+  // Y-anchor shifts down ~30px when the stats row is present.
   ctx.textAlign = "left";
   ctx.font = "26px 'Georgia', 'Times New Roman', serif";
   ctx.fillStyle = "#3f2616";
   const milestonesX = 100;
-  const milestonesY = 305;
+  const milestonesY = input.stats ? 335 : 305;
   const lineHeight = 42;
   const lines = input.milestones.length
     ? input.milestones

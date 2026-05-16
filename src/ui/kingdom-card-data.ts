@@ -19,6 +19,21 @@ import type { SavedJournalEntry } from "../sim/Persistence";
 export const CARD_WIDTH = 1200;
 export const CARD_HEIGHT = 630;
 
+/**
+ * Stats overlay block — rendered as a small badge row under the divider.
+ * Every field is optional; the renderer only draws badges for the ones
+ * that have meaningful values.
+ */
+export interface KingdomCardStats {
+  population?: number;
+  gold?: number;
+  vault?: number;
+  achievementsUnlocked?: number;
+  achievementsTotal?: number;
+  /** Population history series, oldest first. Used for the inset sparkline. */
+  populationSeries?: readonly number[];
+}
+
 export interface KingdomCardInput {
   kingdomName: string;
   monarchName: string;
@@ -31,6 +46,38 @@ export interface KingdomCardInput {
   generation: number;
   /** Up to 5 milestone-or-noteworthy lines, oldest first. */
   milestones: string[];
+  /** Optional stats; if absent, the stats row + sparkline are skipped. */
+  stats?: KingdomCardStats;
+}
+
+/**
+ * Pick the last N values out of a long history series, suitable for a small
+ * sparkline (the card budgets ~120px wide, so 30-60 samples is plenty).
+ *
+ * Returns a new array; never mutates the input. If `samples` is empty,
+ * returns an empty array.
+ */
+export function pickSparklineSeries(
+  samples: readonly number[],
+  max: number = 60,
+): number[] {
+  if (samples.length === 0) return [];
+  if (samples.length <= max) return samples.slice();
+  return samples.slice(samples.length - max);
+}
+
+/**
+ * Compact human formatter for the stats badges. Keeps the row short.
+ *   12 → "12"
+ *   1234 → "1.2k"
+ *   1234567 → "1.2M"
+ */
+export function compactNumber(n: number): string {
+  if (!Number.isFinite(n)) return "0";
+  if (n < 1000) return Math.floor(n).toString();
+  if (n < 10000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "k";
+  if (n < 1_000_000) return Math.floor(n / 1000) + "k";
+  return (n / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
 }
 
 /**
@@ -112,6 +159,8 @@ export function composeCardInput(args: {
   maxMilestones?: number;
   /** Override the per-line char budget. Default 90. */
   maxLineChars?: number;
+  /** Optional stats block; passed through to the renderer when present. */
+  stats?: KingdomCardStats;
 }): KingdomCardInput {
   const milestones = pickCardMilestones(args.journal, args.maxMilestones ?? 5)
     .map((m) => trimMilestoneLine(m, args.maxLineChars ?? 90));
@@ -124,6 +173,7 @@ export function composeCardInput(args: {
     year: args.year,
     generation: args.generation,
     milestones,
+    stats: args.stats,
   };
 }
 

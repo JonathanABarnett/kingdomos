@@ -12,6 +12,7 @@ import { CanvasSurface, drawCharacter } from "../engine/CharacterRenderer";
 import { drawPet } from "../engine/PetSpec";
 import type { CharacterSpec } from "../engine/CharacterSpec";
 import type { PetSpec } from "../engine/PetSpec";
+import { Achievements } from "../sim/systems/Achievements";
 
 /**
  * Render a monarch or pet spec to an offscreen 32×32 canvas, suitable for
@@ -65,6 +66,7 @@ export function KingdomCard({
   const journal = useGameStore((s) => s.journal);
   const monarchSpec = useGameStore((s) => s.monarchSpec);
   const petSpec = useGameStore((s) => s.petSpec);
+  const achievements = useGameStore((s) => s.achievements);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [dataUrl, setDataUrl] = useState<string | null>(null);
 
@@ -86,6 +88,14 @@ export function KingdomCard({
         year: world.state.year,
         generation: world.succession.state.generation,
         journal,
+        stats: {
+          population: world.npcs.length,
+          gold: Math.floor(world.economy.state.gold),
+          vault: world.treasury.count(),
+          achievementsUnlocked: Object.keys(achievements).length,
+          achievementsTotal: Achievements.definitions().length,
+          populationSeries: world.history.series("population"),
+        },
       });
       // Render the monarch + pet to small offscreen canvases at native 32×32
       // resolution. The card renderer scales them up with smoothing off so
@@ -100,7 +110,7 @@ export function KingdomCard({
     } catch (err) {
       console.warn("[KingdomCard] render failed", err);
     }
-  }, [open, world, identity, journal, monarchSpec, petSpec]);
+  }, [open, world, identity, journal, monarchSpec, petSpec, achievements]);
 
   // Esc-to-close
   useEffect(() => {

@@ -5,6 +5,8 @@ import {
   trimMilestoneLine,
   composeCardInput,
   cardFilename,
+  pickSparklineSeries,
+  compactNumber,
 } from "./kingdom-card-data";
 import { drawKingdomCard } from "./kingdom-card-renderer";
 
@@ -152,6 +154,53 @@ describe("composeCardInput", () => {
     });
     expect(input.milestones[0].length).toBeLessThanOrEqual(60);
     expect(input.milestones[0].endsWith("…")).toBe(true);
+  });
+});
+
+describe("pickSparklineSeries", () => {
+  it("returns empty on empty input", () => {
+    expect(pickSparklineSeries([])).toEqual([]);
+  });
+
+  it("returns the input as-is when shorter than `max`", () => {
+    expect(pickSparklineSeries([1, 2, 3], 60)).toEqual([1, 2, 3]);
+  });
+
+  it("returns the last `max` values when input is longer", () => {
+    const big = Array.from({ length: 200 }, (_, i) => i);
+    const out = pickSparklineSeries(big, 60);
+    expect(out.length).toBe(60);
+    expect(out[0]).toBe(140);
+    expect(out[59]).toBe(199);
+  });
+
+  it("does not mutate the input array", () => {
+    const big = [1, 2, 3, 4, 5];
+    const before = big.slice();
+    pickSparklineSeries(big, 3);
+    expect(big).toEqual(before);
+  });
+});
+
+describe("compactNumber", () => {
+  it("renders small numbers without suffix", () => {
+    expect(compactNumber(0)).toBe("0");
+    expect(compactNumber(7)).toBe("7");
+    expect(compactNumber(999)).toBe("999");
+  });
+  it("uses k for thousands", () => {
+    expect(compactNumber(1000)).toBe("1k");
+    expect(compactNumber(1234)).toBe("1.2k");
+    expect(compactNumber(9999)).toBe("10k");
+    expect(compactNumber(50000)).toBe("50k");
+  });
+  it("uses M for millions", () => {
+    expect(compactNumber(1_000_000)).toBe("1M");
+    expect(compactNumber(2_500_000)).toBe("2.5M");
+  });
+  it("guards against non-finite values", () => {
+    expect(compactNumber(NaN)).toBe("0");
+    expect(compactNumber(Infinity)).toBe("0");
   });
 });
 
@@ -326,5 +375,95 @@ describe("drawKingdomCard (smoke)", () => {
       milestones: ["x"],
     });
     expect(ctx.calls.filter((c) => c.method === "drawImage").length).toBe(0);
+  });
+
+  it("renders the stats badge row when stats are present", () => {
+    const ctx = makeMockCtx();
+    drawKingdomCard(ctx, {
+      kingdomName: "K",
+      monarchName: "M",
+      bannerColor: "#b45309",
+      day: 1,
+      year: 1,
+      generation: 1,
+      milestones: [],
+      stats: {
+        population: 24,
+        gold: 412,
+        vault: 7,
+        achievementsUnlocked: 14,
+        achievementsTotal: 27,
+      },
+    });
+    const filled = ctx.calls.filter((c) => c.method === "fillText").map((c) => String(c.args[0]));
+    expect(filled.some((t) => t === "24")).toBe(true);
+    expect(filled.some((t) => t === "villagers")).toBe(true);
+    expect(filled.some((t) => t === "412")).toBe(true);
+    expect(filled.some((t) => t === "14/27")).toBe(true);
+  });
+
+  it("stats row skips zero/missing badges (compact even on a new kingdom)", () => {
+    const ctx = makeMockCtx();
+    drawKingdomCard(ctx, {
+      kingdomName: "K",
+      monarchName: "M",
+      bannerColor: "#b45309",
+      day: 1,
+      year: 1,
+      generation: 1,
+      milestones: [],
+      stats: {
+        population: 12,
+        gold: 0,
+        vault: 0,
+      },
+    });
+    const filled = ctx.calls.filter((c) => c.method === "fillText").map((c) => String(c.args[0]));
+    expect(filled.some((t) => t === "12")).toBe(true);
+    expect(filled.filter((t) => t === "gold").length).toBe(0);
+  });
+
+  it("draws the sparkline polyline when a populationSeries is provided", () => {
+    const ctx = makeMockCtx();
+    const fakeSprite = {} as CanvasImageSource;
+    drawKingdomCard(
+      ctx,
+      {
+        kingdomName: "K",
+        monarchName: "M",
+        bannerColor: "#b45309",
+        day: 30,
+        year: 1,
+        generation: 1,
+        milestones: [],
+        stats: {
+          population: 18,
+          populationSeries: [10, 11, 12, 13, 14, 15, 16, 17, 18],
+        },
+      },
+      { monarchSprite: fakeSprite },
+    );
+    expect(ctx.calls.some((c) => c.method === "stroke")).toBe(true);
+    expect(ctx.calls.some((c) => c.method === "lineTo")).toBe(true);
+  });
+
+  it("sparkline is skipped when fewer than 2 samples are available", () => {
+    const ctx = makeMockCtx();
+    const fakeSprite = {} as CanvasImageSource;
+    drawKingdomCard(
+      ctx,
+      {
+        kingdomName: "K",
+        monarchName: "M",
+        bannerColor: "#b45309",
+        day: 1,
+        year: 1,
+        generation: 1,
+        milestones: [],
+        stats: { population: 1, populationSeries: [1] },
+      },
+      { monarchSprite: fakeSprite },
+    );
+    expect(ctx.calls.some((c) => c.method === "stroke")).toBe(false);
   });
 });
