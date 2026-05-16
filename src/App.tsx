@@ -6,6 +6,7 @@ import { HUD } from "./ui/HUD";
 import { EventLog } from "./ui/EventLog";
 import { SettingsPanel } from "./ui/SettingsPanel";
 import { PhotoMode } from "./ui/PhotoMode";
+import { KingdomCard } from "./ui/KingdomCard";
 import { JournalPanel } from "./ui/JournalPanel";
 import { AchievementToast } from "./ui/AchievementToast";
 import { NpcInspect } from "./ui/NpcInspect";
@@ -82,6 +83,7 @@ export function App() {
   const [petCreatorOpen, setPetCreatorOpen] = useState(false);
   const [inspected, setInspected] = useState<Structure | null>(null);
   const [statsOpen, setStatsOpen] = useState(false);
+  const [kingdomCardOpen, setKingdomCardOpen] = useState(false);
   // Show the title screen on first paint. Dismissed by Continue / New / etc.
   const [titleOpen, setTitleOpen] = useState(true);
   // Detect "has a saved kingdom" once on mount.
@@ -839,6 +841,15 @@ export function App() {
           setSettingsOpen(false);
           setPetCreatorOpen(true);
         }}
+        onOpenKingdomCard={() => {
+          setSettingsOpen(false);
+          setKingdomCardOpen(true);
+        }}
+      />
+      <KingdomCard
+        world={worldRef.current}
+        open={kingdomCardOpen && !streamerMode}
+        onClose={() => setKingdomCardOpen(false)}
       />
       <JournalPanel
         open={journalOpen && !streamerMode}

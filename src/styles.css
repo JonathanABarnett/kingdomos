@@ -380,6 +380,72 @@ html, body, #root, .app-root {
 }
 .photo-actions button:hover { border-color: var(--accent); color: var(--accent); }
 
+/* Kingdom Card — a generative shareable PNG. Reuses the photo-modal vibe but
+   shows a much wider 1200×630 card with action buttons below. */
+.kingdom-card-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+}
+.kingdom-card-frame {
+  background: var(--panel-bg);
+  border: 1px solid var(--hud-border);
+  padding: 18px;
+  max-width: 96vw;
+  max-height: 96vh;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  cursor: default;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+.kingdom-card-canvas-wrap {
+  max-width: 88vw;
+  max-height: 70vh;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.kingdom-card-canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  image-rendering: auto;
+}
+.kingdom-card-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.kingdom-card-hint {
+  color: var(--panel-fg-muted, #a8a29e);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  font-style: italic;
+}
+.kingdom-card-buttons {
+  display: flex;
+  gap: 8px;
+}
+.kingdom-card-buttons button {
+  background: transparent;
+  color: var(--panel-fg);
+  border: 1px solid var(--hud-border);
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.kingdom-card-buttons button:hover { border-color: var(--accent); color: var(--accent); }
+.kingdom-card-buttons button:disabled { opacity: 0.4; cursor: not-allowed; }
+
 /* Journal */
 .journal-panel {
   position: absolute;

@@ -1,0 +1,138 @@
+/**
+ * Pure data functions for the Kingdom Card.
+ *
+ * The Kingdom Card is a single shareable PNG that summarizes the player's
+ * kingdom — name, monarch, recent milestones — in a Twitter/Mastodon-friendly
+ * 1200×630 composition. It's deliberately *not* a screenshot; it's a
+ * generative composition, so every share is a clean, on-brand asset.
+ *
+ * This file holds the DOM-independent half: picking which milestones make
+ * the card, trimming long text to a character budget, composing the input
+ * record from a world snapshot. Everything here is testable in node.
+ *
+ * The actual Canvas2D drawing lives in `kingdom-card-renderer.ts`.
+ */
+
+import type { SavedJournalEntry } from "../sim/Persistence";
+
+/** Final dimensions of the rendered PNG. Tuned for X/Twitter/Mastodon previews. */
+export const CARD_WIDTH = 1200;
+export const CARD_HEIGHT = 630;
+
+export interface KingdomCardInput {
+  kingdomName: string;
+  monarchName: string;
+  /** Optional — falls back to a generic line when absent. */
+  petName?: string;
+  /** Hex string like "#b45309". */
+  bannerColor: string;
+  day: number;
+  year: number;
+  generation: number;
+  /** Up to 5 milestone-or-noteworthy lines, oldest first. */
+  milestones: string[];
+}
+
+/**
+ * Pick the milestones that go on the card. Priority order:
+ *   1. "milestone" kind entries (the moments the journal already calls out)
+ *   2. "life" kind entries (births, marriages, deaths) — these read as story
+ *   3. "event" kind entries (everything else worth reading aloud)
+ *
+ * "system" and "weather" entries are filtered out — they're either too noisy
+ * ("Day 12 dawns; spring continues") or too short to read as a highlight.
+ *
+ * Returns at most `max` entries, oldest first. If the journal is empty
+ * returns an empty array — callers should fall back to a generic line.
+ */
+export function pickCardMilestones(
+  journal: readonly SavedJournalEntry[],
+  max: number = 5,
+): string[] {
+  const ranked: Array<{ text: string; rank: number; order: number }> = [];
+  for (let i = 0; i < journal.length; i++) {
+    const e = journal[i];
+    let rank: number;
+    if (e.kind === "milestone") rank = 0;
+    else if (e.kind === "life") rank = 1;
+    else if (e.kind === "event") rank = 2;
+    else continue; // skip system + weather
+    ranked.push({ text: e.text, rank, order: i });
+  }
+  // Sort by rank asc, then by order desc (newest first within rank).
+  ranked.sort((a, b) => a.rank - b.rank || b.order - a.order);
+  const top = ranked.slice(0, max);
+  // Display in chronological order (oldest first) so the card reads forward.
+  top.sort((a, b) => a.order - b.order);
+  return top.map((r) => r.text);
+}
+
+/**
+ * Trim a milestone line to roughly fit a fixed-width slot on the card. We
+ * budget by character count rather than measuring text in canvas because the
+ * data file stays node-testable; the renderer can still re-trim more
+ * precisely if it wants.
+ *
+ * Cuts at the nearest word boundary and appends an ellipsis only when an
+ * actual truncation happened.
+ */
+export function trimMilestoneLine(text: string, maxChars: number = 90): string {
+  if (text.length <= maxChars) return text;
+  // Reserve 1 char for the ellipsis.
+  const budget = Math.max(1, maxChars - 1);
+  let cut = text.slice(0, budget);
+  // Walk back to the last space so we don't cleave a word in half.
+  const lastSpace = cut.lastIndexOf(" ");
+  if (lastSpace > budget * 0.6) {
+    cut = cut.slice(0, lastSpace);
+  }
+  // Strip trailing punctuation we'd otherwise immediately follow with "…".
+  cut = cut.replace(/[\s.,;:—–-]+$/, "");
+  return cut + "…";
+}
+
+/**
+ * Compose the card input from raw world bits. Pure; takes everything as
+ * arguments so the function is trivially testable.
+ *
+ * Pass 1 keeps this minimal — kingdom name, monarch, banner, recent
+ * milestones, and the date stamp. Later passes pile on stats, achievements,
+ * and sprite data.
+ */
+export function composeCardInput(args: {
+  kingdomName: string;
+  monarchName: string;
+  petName?: string;
+  bannerColor: string;
+  day: number;
+  year: number;
+  generation: number;
+  journal: readonly SavedJournalEntry[];
+  /** Override the milestone count. Default 5. */
+  maxMilestones?: number;
+  /** Override the per-line char budget. Default 90. */
+  maxLineChars?: number;
+}): KingdomCardInput {
+  const milestones = pickCardMilestones(args.journal, args.maxMilestones ?? 5)
+    .map((m) => trimMilestoneLine(m, args.maxLineChars ?? 90));
+  return {
+    kingdomName: args.kingdomName,
+    monarchName: args.monarchName,
+    petName: args.petName,
+    bannerColor: args.bannerColor,
+    day: args.day,
+    year: args.year,
+    generation: args.generation,
+    milestones,
+  };
+}
+
+/**
+ * A filename suggestion for the saved PNG. Keeps kingdom name URL-safe and
+ * appends a date-stamp so multiple shares from the same kingdom don't
+ * stomp each other.
+ */
+export function cardFilename(kingdomName: string, day: number, year: number): string {
+  const safe = kingdomName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "kingdom";
+  return `${safe}-y${year}d${day}-card.png`;
+}

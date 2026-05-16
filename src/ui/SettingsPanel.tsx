@@ -39,11 +39,13 @@ export function SettingsPanel({
   onClose,
   onOpenCreator,
   onOpenPetCreator,
+  onOpenKingdomCard,
 }: {
   open: boolean;
   onClose: () => void;
   onOpenCreator: () => void;
   onOpenPetCreator: () => void;
+  onOpenKingdomCard: () => void;
 }) {
   const settings = useGameStore((s) => s.settings);
   const setCrt = useGameStore((s) => s.setCrt);
@@ -133,6 +135,14 @@ export function SettingsPanel({
             style={{ marginTop: 8, width: "100%" }}
           >
             Customize companion
+          </button>
+          <button
+            onClick={onOpenKingdomCard}
+            style={{ marginTop: 8, width: "100%" }}
+            title="Generate a shareable card of your kingdom"
+            disabled={!identity}
+          >
+            Share kingdom (card)
           </button>
           <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
             <button
